@@ -68,7 +68,7 @@ Opcode_Decifer:           *SUBROUTINE STARTS HERE
         CMP.B       #%0100,D0
         BEQ         NOT_NOP_RTS_MOVEM_LEA_JSR ;NOT, NOP, RTS, MOVEM, LEA, JSR
         
-        LEA         WRONG_INSTRUCTION, A2 ;ELSE IT TIS WRONG INSTRUCTION
+        LEA         WRONG_INSTRUCTION, A2 ;ELSE IT IS WRONG INSTRUCTION
         
  
       
