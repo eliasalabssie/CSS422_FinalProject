@@ -17,15 +17,6 @@ AREG4   EQU    %100
 AREG5   EQU    %101
 AREG6   EQU    %111
 
-* DATA REGISTERS----------------------------------------------------------
-DREG0   EQU    %000
-DREG1   EQU    %001
-DREG2   EQU    %010
-DREG3   EQU    %011
-DREG4   EQU    %100
-DREG5   EQU    %101
-DREG6   EQU    %110
-DREG7   EQU    %111
 *-------------------------------------------------------------------------
 CR      EQU     $0D
 LF      EQU     $0A
@@ -33,18 +24,20 @@ LF      EQU     $0A
 
 
 ***** INSTRUCTION DECOMPOTION SUBROUTINE**********************************
-*A1 CONTAINS THE WORD READ FROM THE MEMORY
-*DONT MODIFY the contents of ADDRESS REGISTER --- A1 --- IN THIS SUBROUTINE 
+*A2 CONTAINS THE WORD READ FROM THE MEMORY
+*a2 will beincremented after processing the word 
+* D2 used for copying values from A2
 *-------------------------------------------------------------------------
 OPTCREE
 
         ORG $1000
 INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE 
-            
-        CLR.L      D0 ; CLEAR OUT D0
-        MOVE.W     (A2),D2  ;
+    
+        MOVEA.W #$A000, A2        
+        CLR.L      D2 ; CLEAR OUT D0
+        MOVE.W    (A2),D2  ;
         SWAP       D2
-        ROL        #2, D2 ;GETTING THE 2 MSB TO THE FRONT 
+        ROL.L      #2, D2 ;GETTING THE 2 MSB TO THE FRONT 
         AND.B      #%00000011,D2 ;MASK THE BITS FROM POSITION 2 AND UP
         CMP.B      #0, D2
         BEQ        MOVE_MOVEA ;THE TWO MOST LEFT BITS ARE 00, then it's MOVE || MOVEA
@@ -107,7 +100,7 @@ INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE
 MOVE_MOVEA      CLR.L   D2
                 MOVE.W  (A2),D2
                 LSR.W   #6, D2 ;MOVE THE 9,8,7TH BITS TO THE FRONT 
-                AND.B   #$07, D2 ;MASK THE OHTER BITS EXCEPT 9,8,7
+                AND.B   #$07, D2 ;MASK THE OThER BITS EXCEPT 9,8,7
                 CMP.B   #%001, D2 ;IF EQUAL, ITS MOVEA
                 BEQ     MOVEA_INST
                 LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION INTO  A6
@@ -319,7 +312,7 @@ LEA_INST
         
          SIMHALT             
 
-
+MOVE_TAG
 MOVEA_TAG
     END    INSTRUCTION_Decifer        ; last line of source
 *********SOURCE FILE ENDS HERE **************************************************
