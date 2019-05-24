@@ -18,7 +18,7 @@ AREG5   EQU    %101
 AREG6   EQU    %111
 
 *----- SIZE CONSTANTS -------------------------------------------------------
-BYTE    EQU    %01
+BYTE    EQU    %00 ;PROBLEM---************************************************************************************************
 WORD    EQU    %11
 LONG    EQU    %10
 
@@ -33,11 +33,14 @@ LF      EQU     $0A
 *a2 will beincremented after processing the word 
 * D2 used for copying values from A2
 *-------------------------------------------------------------------------
+test    dc.w    $9240
 OPTCREE
         
 
         ORG $1000
 INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE 
+                
+        LEA     TEST, A2 ;THIS IS TEST VALUE (DELETE IS WHEN RUNNING THE ACTUAL CODE)        
            
         CLR.L      D2 ; CLEAR OUT D0
         MOVE.W    (A2),D2  ;
@@ -111,7 +114,7 @@ MOVE_MOVEA      CLR.L   D2
                 
 *------------------ MOVE -----------------------------------------------------------------------              
                 *ELSE IT IS MOVE
-                LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION INTO  A6
+MOVE_INST       LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION INTO  A6
                 MOVE.W (A2),D2 ;
                 SWAP    D2
                 ROL.L   #4, D2 ;GET THE 13, 12 BITS FOR SIZE
@@ -124,7 +127,7 @@ MOVE_MOVEA      CLR.L   D2
                 BEQ     LONG_SIZE
                 
                 
-                *ELSE ITS WRONG SIZE
+                *ELSE IT'S WRONG SIZE
 WRONG_SIZE      MOVE.B  #5, D7 ;A PUT WRONG SIZE SIGN INTO D7
                 RTS          ;BACK TO MAIN
                 
@@ -158,18 +161,18 @@ MOVEA_INST      LEA MOVEA_TAG, A6
 *00— Byte operation
 *01— Word operation
 *10— Long operation 
-BYTEQ   EQU    %00   
-WORDQ   EQU    %01
-LONGQ   EQU    %10                                          
+*BYTEQ   EQU    %00   
+*WORDQ   EQU    %01
+*LONGQ   EQU    %10                                          
 ADDQ_INSTRUCTION   LEA ADDQ_TAG, A6
                    MOVE.W      (A2),D2
                    LSR.L        #6, D2
                    AND.B        #$03, D2
-                   CMP.B        #BYTEQ,D2
+                   CMP.B        #BYTE,D2
                    BEQ          BYTE_SIZE
-                   CMP.B        #WORDQ, D2
+                   CMP.B        #WORD, D2
                    BEQ          WORD_SIZE
-                   CMP.B        #LONGQ, D2
+                   CMP.B        #LONG, D2
                    BEQ          LONG_SIZE
                   
                   ;ELSE,ITS WRONG SIE
@@ -189,7 +192,8 @@ BYTE2  EQU %100
 WORD1  EQU %001
 WORD2  EQU %101
 LONG1  EQU %010
-LONG2  EQU %110                       
+LONG2  EQU %110   
+                    
 OR_INSTRUCTION          LEA   OR_TAG, A6
 
 BIT_MANUP
@@ -289,7 +293,7 @@ REGISTER_SHIFT  CLR.L   D2
                  ;ELSE WRONG INSTR IF 4, 3 BITS ARE 1 0
                 JMP     WRONG_INSTRUCTION 
               
-REGISRER_ARTHIMETIC      CLR.L      D2
+REGISRER_ARTHIMETIC     CLR.L      D2
                         MOVE.W     (A2),D2
                         LSR        #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
                         AND.B      #01, D2
@@ -530,6 +534,7 @@ ASL_TAG
 
     END    INSTRUCTION_Decifer        ; last line of source
 *********SOURCE FILE ENDS HERE **************************************************
+
 
 
 
