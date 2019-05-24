@@ -33,7 +33,7 @@ LF      EQU     $0A
 *a2 will beincremented after processing the word 
 * D2 used for copying values from A2
 *-------------------------------------------------------------------------
-test    dc.W    $9240
+test    dc.W    $E1A1
 OPTCREE
         
 
@@ -300,9 +300,6 @@ REGISRER_ARTHIMETIC     CLR.L      D2
                         CMP.B      #01, D2
                         BEQ        REGISTER_ARTIMETIC_LEFT
 
-BYTE_SHFT       EQU     %00
-WORD_SHIFT      EQU     %01
-LONG_SHIFT      EQU     %10
 
 *---------------------- REGISTER ARTHIMETIC SHIFT -------------------------------------------------------
                                                 LEA ASR_TAG,A6 
@@ -311,11 +308,11 @@ REGISTER_BIT_MANUP                              MOVE.W     (A2),D2
                                                 LSR.L      #6, D2
                                                 AND.B      #$03,D2
                          
-REG_SHIFT_SIZE                                  CMP.B      #BYTE_SHFT,D2
+REG_SHIFT_SIZE                                  CMP.B      #BYTE,D2
                                                 BEQ        BYTE_SIZE ;call BYTE_SSIZE method
-                                                CMP.B      #WORD_SHIFT,D2
+                                                CMP.B      #WORD,D2
                                                 BEQ        WORD_SIZE ;CALL WORD-size method
-                                                CMP.B      #LONG_SHIFT,D2
+                                                CMP.B      #LONG,D2
                                                 BEQ        LONG_SIZE ;CALL LONG_SIZE METHOD
                                                 
                                                 *ELSE WRONG SIZE
@@ -343,7 +340,7 @@ REGISTER_LOGICAL_LEFT   LEA     LSL_TAG, A6
                         
 REGISTER_ROTATE         CLR.L      D2
                         MOVE.W     (A2),D2
-                        LSR        #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
+                        LSR        #8,D2 ;GET THE 8TH BIT TO THE FRONT 
                         CMP.B      #1, D2
                         BEQ        REGISTER_ROTATE_LEFT
                         
@@ -369,11 +366,11 @@ MEMORY_SHIFT    CLR.L     D2
                 LSR       #1, D2 ;A TOTAL OF 9 SHIFTS MADE
                 AND.B     #$07,D2
                 CMP.B     #$00,D2
-                BEQ       MEMORY_ARTIMETIC ; SHIFT
+                BEQ       MEMORY_ARTIMETIC ; ARTHIMETIC SHIFT(ASd)
                 CMP.B     #$01, D2
-                BEQ       MEMORY_LOGICAL
+                BEQ       MEMORY_LOGICAL ;LOGICAL SHIFT (LSd)
                 CMP.B     #$03, D2
-                BEQ       MEMORY_ROTATE 
+                BEQ       MEMORY_ROTATE ;ROTATE SHIFT (ROd)
                  ;ELSE WRONG INSTRUCTION
                  JMP    WRONG_INSTRUCTION
          
@@ -381,31 +378,30 @@ MEMORY_SHIFT    CLR.L     D2
      
 MEMORY_ARTIMETIC   CLR.L      D2
                    MOVE.W     (A2),D2
-                   LSR        #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
-                   CMP.B      #1, D2
-                   BEQ        MEMORY_ARTIMETIC_LEFT     
+                   BTST       #8, D2 ;TEST THE DIRECTION BIT(8th BIT)
+                   BNE        MEMORY_ARTIMETIC_LEFT    ;IF NOT ZERO, IT'S ASL
                    
-                ;ELSE MEMEORY_ARTIMETIC_RIGHT
-                 LEA     ASR_TAG, A6 
-                 MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------
-                 RTS
+                   ;ELSE MEMEORY_ARTIMETIC_RIGHT (ASR)
+                   LEA     ASR_TAG, A6 
+                   MOVE.B  #0, D7 *MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED 
+                   RTS
 
                        
 
 
 
 MEMORY_ARTIMETIC_LEFT  LEA     ASL_TAG, A6 
-                        MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------------
+                        MOVE.B  #0, D7 ;-----------MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED
                         RTS
 
   
 MEMORY_LOGICAL     CLR.L      D2
                    MOVE.W     (A2),D2
-                   LSR        #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
-                   CMP.B      #1, D2
-                   BEQ        MEMORY_LOGICAL_LEFT     
-                   ;MEMEORY_LOGICAL_RIGHT
-                   LEA     ASL_TAG, A6 
+                   BTST         #8, D2
+                   BNE        MEMORY_LOGICAL_LEFT  ;LSL   
+                  
+                  ;ELSE MEMEORY_LOGICAL_RIGHT
+                   LEA     ASR_TAG, A6 
                    MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------------
                    RTS
 
@@ -416,13 +412,12 @@ MEMORY_LOGICAL_LEFT     LEA     LSL_TAG, A6
 
 
 
-MEMORY_ROTATE     CLR.L      D2
-                   MOVE.W     (A2),D2
-                   LSR        #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
-                   CMP.B      #1, D2
-                   BEQ        MEMORY_ROTATE_LEFT 
+MEMORY_ROTATE      CLR.L     D2
+                   MOVE.W    (A2),D2
+                   BTST      #8,D2      ;TEST THE DIRECTION BIT
+                   BNE       MEMORY_ROTATE_LEFT 
                     
-                ;PUT CODE FOR MEMEORY_ROTATE_RIGHT
+                   *ELSE IT SI MEMORY ROTATE RIGHT (ROR)
                    LEA     ROR_TAG, A6 
                    MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------------
                    RTS
@@ -435,7 +430,7 @@ MEMORY_ROTATE_LEFT      LEA     ROL_TAG, A6
                         RTS
 
 
-
+*----------------------END OF SHIFT INSTRUCTIONS -----------------------------------------------------------
 BRA_BGT_BLE_BEQ         CLR.L   D2
                         MOVE.W  (A2),D2
                         ASL     #8, D2 ;GET THE 11, 10,9,AND 8TH BITS TO THE FRONT  
@@ -504,7 +499,7 @@ NOP_INST ;NO SIZE, DES, SOURCE OP
 RTS_INST   ;NO SIZE, DES, SOURCE OP
 JSR_INST  ;
 NOT_INST ;
-MOVEM_INST ;
+MOVEM_INST ;TEME WANTS ME TO ADD 'SIZE + 5' ONTO D7
 LEA_INST
 
 
