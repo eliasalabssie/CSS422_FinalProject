@@ -371,8 +371,9 @@ MEMORY_SHIFT    CLR.L     D2
                 BEQ       MEMORY_LOGICAL ;LOGICAL SHIFT (LSd)
                 CMP.B     #$03, D2
                 BEQ       MEMORY_ROTATE ;ROTATE SHIFT (ROd)
-                 ;ELSE WRONG INSTRUCTION
-                 JMP    WRONG_INSTRUCTION
+                
+                ;ELSE WRONG INSTRUCTION
+                JMP    WRONG_INSTRUCTION
          
                 
      
@@ -382,33 +383,34 @@ MEMORY_ARTIMETIC   CLR.L      D2
                    BNE        MEMORY_ARTIMETIC_LEFT    ;IF NOT ZERO, IT'S ASL
                    
                    ;ELSE MEMEORY_ARTIMETIC_RIGHT (ASR)
-                   LEA     ASR_TAG, A6 
-                   MOVE.B  #0, D7 *MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED 
-                   RTS
+                    LEA     ASR_TAG, A6 
+LEGAL_INST_NO_SIZE  MOVE.B  #0, D7 *MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED 
+                    RTS
 
                        
 
 
 
-MEMORY_ARTIMETIC_LEFT  LEA     ASL_TAG, A6 
-                        MOVE.B  #0, D7 ;-----------MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED
-                        RTS
+MEMORY_ARTIMETIC_LEFT   LEA     ASL_TAG, A6 
+                        JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
+
 
   
-MEMORY_LOGICAL     CLR.L      D2
-                   MOVE.W     (A2),D2
-                   BTST         #8, D2
-                   BNE        MEMORY_LOGICAL_LEFT  ;LSL   
+MEMORY_LOGICAL     CLR.L     D2
+                   MOVE.W    (A2),D2
+                   BTST      #8, D2
+                   BNE       MEMORY_LOGICAL_LEFT  ;LSL   
                   
                   ;ELSE MEMEORY_LOGICAL_RIGHT
                    LEA     ASR_TAG, A6 
-                   MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------------
-                   RTS
+                   JMP    LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
+
 
 
 MEMORY_LOGICAL_LEFT     LEA     LSL_TAG, A6 
-                        MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------------
-                        RTS
+                        JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
 
 
 
@@ -419,15 +421,17 @@ MEMORY_ROTATE      CLR.L     D2
                     
                    *ELSE IT SI MEMORY ROTATE RIGHT (ROR)
                    LEA     ROR_TAG, A6 
-                   MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------------
-                   RTS
+                   JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
 
 
 
 
 MEMORY_ROTATE_LEFT      LEA     ROL_TAG, A6 
-                        MOVE.B  #0, D7 ;-----------MOVE O TO INDICATE NO SIZE NEEDED ----------------------------------
-                        RTS
+                        JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
 
 
 *----------------------END OF SHIFT INSTRUCTIONS -----------------------------------------------------------
@@ -448,15 +452,33 @@ BRA_BGT_BLE_BEQ         CLR.L   D2
                         JMP WRONG_INSTRUCTION
                         
                        
-BRA_INST ;PUT CODE
-BGT_INST ;PUT CODE
-BLE_INST ;PUT CODE
-BEQ_INST ;PUT CODE
+BRA_INST                LEA     BRA_TAG, A6 *MOVE THE TAG NAMEE
+                        JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
+
+                        
+BGT_INST                LEA  BRA_TAG,A6 *MOVE THE TAG NAMEE
+                        JMP   LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
+  
+BLE_INST                LEA  BLE_TAG,A6 *MOVE THE TAG NAMEE
+                        JMP  LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+ 
+
+
+BEQ_INST                LEA  BEQ_TAG,A6 *MOVE THE TAG NAMEE
+                        JMP  LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
+ 
 
 
 NOT_NOP_RTS_MOVEM_LEA_JSR        CLR.L D2
                                  MOVE.W (A2),D2
-                                 CMP.W  #$4E71, D2 ;OPCODE FOR NOP
+                                 CMP.W  #$4E71, D2 ;NOP OPCODE 
                                  BEQ    NOP_INST
                                  
                                  CMP.W  #$4E75,D2 ;RTS OPCODE
@@ -487,28 +509,45 @@ NOT_NOP_RTS_MOVEM_LEA_JSR        CLR.L D2
                                  AND.B    #$07,D2
                                  CMP.B    #$07,D2
                                  BEQ      LEA_INST
-                                 ;PUT CODE ELSE WRONG INST
+                                 
+                                 *ELSE IT IS WRONG INSTRUCTION
+                                 JMP WRONG_INSTRUCTION 
  
                                  
        
 
 
 
-NOP_INST ;NO SIZE, DES, SOURCE OP
+NOP_INST      LEA NOP_TAG, A6 
+              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
-RTS_INST   ;NO SIZE, DES, SOURCE OP
-JSR_INST  ;
-NOT_INST ;
+
+RTS_INST      LEA RTS_TAG, A6 
+              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
+
+JSR_INST      LEA JSR_TAG, A6 
+              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
+
+NOT_INST      LEA NOT_TAG, A6 
+              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+
+
+
+
 MOVEM_INST ;TEME WANTS ME TO ADD 'SIZE + 5' ONTO D7
-LEA_INST
+LEA_INST      LEA NOT_TAG, A6 
+              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
 
-        
         
          SIMHALT
              
-* I DONT NEED THIS SYMBALS, ITS FOR TEMSEGEN AND TO TEST MY CODE --------------------------------------------------------
+* I DON'T NEED THESE NAME TAGS,IT'S FOR TEMSEGEN AND TO TEST MY CODE ----------------------------------------------
 MOVE_TAG
 MOVEA_TAG
 ADDQ_TAG
@@ -526,6 +565,14 @@ ROR_TAG
 ROL_TAG
 ASR_TAG
 ASL_TAG
+BRA_TAG
+BRA_TAG
+BLE_TAG
+BEQ_TAG
+NOP_TAG
+RTS_TAG
+JSR_TAG
+NOT_TAG
 
     END    INSTRUCTION_Decifer        ; last line of source
 *********SOURCE FILE ENDS HERE **************************************************
