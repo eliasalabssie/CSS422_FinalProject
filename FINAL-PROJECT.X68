@@ -38,8 +38,7 @@ OPTCREE
 
         ORG $1000
 INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE 
-    
-        MOVEA.W #$A000, A2        
+           
         CLR.L      D2 ; CLEAR OUT D0
         MOVE.W    (A2),D2  ;
         SWAP       D2
@@ -202,13 +201,13 @@ BIT_MANUP
                         BEQ     BYTE_SIZE
                         CMP.B   #BYTE2, D2
                         BEQ     BYTE_SIZE
-                        CMP.B   WORD1, D2
+                        CMP.B   #WORD1, D2
                         BEQ     WORD_SIZE
-                        CMP.B   WORD2, D2
+                        CMP.B   #WORD2, D2
                         BEQ     WORD_SIZE
-                        CMP.B   LONG1, D2
+                        CMP.B   #LONG1, D2
                         BEQ     LONG_SIZE
-                        CMP.B   LONG2, D2
+                        CMP.B   #LONG2, D2
                         BEQ     LONG_SIZE
                         
                         ;ELSE ITS WRONG SIZE
@@ -247,7 +246,7 @@ ADD_ADDA        CLR.L     D2
 *000 001 010 < ea > + Dn ? Dn
 *100 101 110 Dn + < ea > ? < ea >                  
 ADD_INST        LEA     ADD_TAG, A6 ;PUT ADD_TAG INTO A6 FOR PRINT
-                JMP     BIT_MANUP ;DEERMIN SEZE FROM BIT_MANUP SUBROUTINE
+                JMP     BIT_MANUP ;DEERMIN SiZE FROM BIT_MANUP SUBROUTINE
                 
                
 *Opmode field—Specifies the size of the operation.
@@ -531,6 +530,7 @@ ASL_TAG
 
     END    INSTRUCTION_Decifer        ; last line of source
 *********SOURCE FILE ENDS HERE **************************************************
+
 
 
 
