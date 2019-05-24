@@ -33,7 +33,7 @@ LF      EQU     $0A
 *a2 will beincremented after processing the word 
 * D2 used for copying values from A2
 *-------------------------------------------------------------------------
-test    dc.w    $9240
+test    dc.W    $9240
 OPTCREE
         
 
@@ -160,10 +160,7 @@ MOVEA_INST      LEA MOVEA_TAG, A6
                 
 *00— Byte operation
 *01— Word operation
-*10— Long operation 
-*BYTEQ   EQU    %00   
-*WORDQ   EQU    %01
-*LONGQ   EQU    %10                                          
+*10— Long operation                                     
 ADDQ_INSTRUCTION   LEA ADDQ_TAG, A6
                    MOVE.W      (A2),D2
                    LSR.L        #6, D2
@@ -187,31 +184,34 @@ MOVEQ_INSTRUCTION       LEA   MOVEQ_TAG, A6
 *Byte Word Long Operation
 *000 001 010 < ea > V Dn ? Dn
 *100 101 110 Dn V < ea > ? < ea >
-BYTE1  EQU %000
-BYTE2  EQU %100
-WORD1  EQU %001
-WORD2  EQU %101
-LONG1  EQU %010
-LONG2  EQU %110   
-                    
+BYTE1_OP  EQU $00
+BYTE2_OP  EQU $04
+
+WORD1_OP  EQU $01
+WORD2_OP  EQU $05
+
+LONG1_OP  EQU $02
+LONG2_OP  EQU $06   
+
+*SIZE 3 BIT OPMODE                    
 OR_INSTRUCTION          LEA   OR_TAG, A6
 
 BIT_MANUP
                         MOVE.W  (A2),D2
-                        SWAP    D2
                         LSR.L   #6,D2
                         AND.B   #$07, D2
-                        CMP.B   #BYTE1,D2
+                        CMP.B   #BYTE1_OP,D2
                         BEQ     BYTE_SIZE
-                        CMP.B   #BYTE2, D2
+                        CMP.B   #BYTE2_OP, D2
                         BEQ     BYTE_SIZE
-                        CMP.B   #WORD1, D2
+
+                        CMP.B   #WORD1_OP, D2
                         BEQ     WORD_SIZE
-                        CMP.B   #WORD2, D2
+                        CMP.B   #WORD2_OP, D2
                         BEQ     WORD_SIZE
-                        CMP.B   #LONG1, D2
+                        CMP.B   #LONG1_OP, D2
                         BEQ     LONG_SIZE
-                        CMP.B   #LONG2, D2
+                        CMP.B   #LONG2_OP, D2
                         BEQ     LONG_SIZE
                         
                         ;ELSE ITS WRONG SIZE
@@ -534,6 +534,7 @@ ASL_TAG
 
     END    INSTRUCTION_Decifer        ; last line of source
 *********SOURCE FILE ENDS HERE **************************************************
+
 
 
 
