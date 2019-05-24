@@ -50,16 +50,16 @@ INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE
 
   *AT THIS POINT MOVE AND MOVEA ARE FILTERED OUT INTO THIER RESPECTIVE SUBROUTINE
         CLR.L       D2
-        MOVE.W      (A2),D2 ; READ THE WORD INSTRUCTION FROM A1
+        MOVE.W     (A2),D2 ; READ THE WORD INSTRUCTION FROM A1
         SWAP        D2 ; BRING THE LM
-        ROL.W       #4, D0 ;BRING THE FIRST 4 MSB OF THE INSTRUCTION TO THE FRONT
-        AND.B       #$0F,D0 ; MASK OTHER BITS
+        ROL.L       #4, D2 ;BRING THE FIRST 4 MSB OF THE INSTRUCTION TO THE FRONT
+        AND.B       #$0F,D2 ; MASK OTHER BITS
         
-        CMP.B       #%0101, D0  ;A CODE FOR ADDQ 
+        CMP.B       #%0101, D2  ;A CODE FOR ADDQ 
         BEQ         ADDQ_INSTRUCTION ;THE INSTRUCTION IS ADDQ 
  
   *ADDQ FILTERED OUT AT THIS POINT
-        CMP.B       #%0111, D0
+        CMP.B       #%0111, D2
         BEQ         MOVEQ_INSTRUCTION ;MOVEQ
   
   *MOVEQ FILTERED OUT AT THIS POINT
@@ -237,7 +237,7 @@ ADD_ADDA        CLR.L     D2
                 LSR      #6, D2
                 AND.B    #$07, D2 ;MASK THE BITS BEFORE BIT 8TH
                 CMP.B    #$03, D2 ;IF THE 8, 7,6TH BIT ARE EITHER 011 OR 111, ITS ADDA
-                BRA      ADDA_INST
+                BEQ     ADDA_INST
                 CMP.B    #$07, D2 ;IF 8,7,6 BITS ARE 111, THEN ITS ADDA AGAIN 
                 BEQ      ADDA_INST
                 
@@ -531,6 +531,7 @@ ASL_TAG
 
     END    INSTRUCTION_Decifer        ; last line of source
 *********SOURCE FILE ENDS HERE **************************************************
+
 
 
 
