@@ -25,40 +25,39 @@ WELCOME_LABEL       LEA     WELCOME,A1
                     MOVE.B  #14,D0
                     TRAP    #15
 
-*PROMPT THE USER FOR START AND END MEMORY ADDRESS
-              * Display the prompt for START MEMORY input
-GET_START           LEA         PROMPT_START,A1
-                    MOVE.B      #14,D0
-                    TRAP        #15
-                    JSR         GET_LONG_HEX_INPUT
-                    MOVEA.L     D0,A2               * START address in A2
-                   
-              * Display the prompt for END MEMORY input
-GET_END             LEA         PROMPT_END,A1
-                    MOVE.B      #14,D0
-                    TRAP        #15
-                    JSR         GET_LONG_HEX_INPUT
-                    MOVE.L      D0,A3               * END address in A3        
-        
-                    
-               * VALIDATING USER INPUT
-                    MOVE.L  A2,D1
-                    SUB.L   D1,D0
-                    CMP.L   #2,D0
-                    BGE     START_READING
-                    JSR     DISPLAY_INVALID_ADDRESS
-                    BRA     GET_START
+**PROMPT THE USER FOR START AND END MEMORY ADDRESS
+*              * Display the prompt for START MEMORY input
+*GET_START           LEA         PROMPT_START,A1
+*                    MOVE.B      #14,D0
+*                    TRAP        #15
+*                    JSR         GET_LONG_HEX_INPUT
+*                    MOVEA.L     D0,A2               * START address in A2
+*                   
+*              * Display the prompt for END MEMORY input
+*GET_END             LEA         PROMPT_END,A1
+*                    MOVE.B      #14,D0
+*                    TRAP        #15
+*                    JSR         GET_LONG_HEX_INPUT
+*                    MOVE.L      D0,A3               * END address in A3        
+*        
+*                    
+*               * VALIDATING USER INPUT
+*                    MOVE.L  A2,D1
+*                    SUB.L   D1,D0
+*                    CMP.L   #2,D0
+*                    BGE     START_READING
+*                    JSR     DISPLAY_INVALID_ADDRESS
+*                    BRA     GET_START
+
+                MOVE.L      #$0000A000,A2
+                MOVE.L      #$0000A00C,A3
                 
-START_READING   JSR     INSTRUCTION_DECIFER
-                MOVE.B  #$57,D6
+START_READING   JSR     INSTRUCTION_DECIPHER
                 ADD.L   #2,A2
                 JSR     PRINT_INSTRUCTION
-                ADD.L   #2,A2
                 CMP.L   A2,A3
                 BGT     START_READING
-                                    
-                    
-                    
+                                                      
 END_MAIN        SIMHALT
 *****************************************************************************************
 
@@ -140,35 +139,37 @@ DISPLAY_INVALID_ADDRESS     MOVEM.L     ALL_REG, -(SP)
 *****************************************************************************************
 
 
-INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE 
-                           
+INSTRUCTION_DECIPHER:           *SUBROUTINE STARTS HERE 
+        
+        CLR.L   D7
+                
         CLR.L      D2 ; CLEAR OUT D0
         MOVE.W    (A2),D2  ;
         SWAP       D2
         ROL.L      #2, D2 ;GETTING THE 2 MSB TO THE FRONT 
-        AND.B      #%00000011,D2 ;MASK THE BITS FROM POSITION 2 AND UP
-        CMP.B      #0, D2
+        AND.B      #$03,D2 ;MASK THE BITS FROM POSITION 2 AND UP
+        CMP.B      #$0,D2
         BEQ        MOVE_MOVEA ;THE TWO MOST LEFT BITS ARE 00, then it's MOVE || MOVEA
 
   *AT THIS POINT MOVE AND MOVEA ARE FILTERED OUT INTO THIER RESPECTIVE SUBROUTINE
         CLR.L       D2
         MOVE.W     (A2),D2 ; READ THE WORD INSTRUCTION FROM A1
-        SWAP        D2 ; BRING THE LM
+        SWAP        D2 ; swap the data to 15 to 31 positions
         ROL.L       #4, D2 ;BRING THE FIRST 4 MSB OF THE INSTRUCTION TO THE FRONT
         AND.B       #$0F,D2 ; MASK OTHER BITS
         
         CMP.B       #%0101, D2  ;A CODE FOR ADDQ 
-        BEQ         ADDQ_MAYBE_INSTRUCTION ;THE INSTRUCTION MAY MAY BE ADDQ OR SOMETHING ELSE 
+        BEQ         ADDQ_MAYBE_INSTRUCTION ;THE INSTRUCTION MAY BE ADDQ OR SIMILAR INSTRUCTIONS START WITH 0101 
  
   *ADDQ FILTERED OUT AT THIS POINT
         CMP.B       #%0111, D2
         BEQ         MOVEQ_INSTRUCTION ;MOVEQ
-  
   *MOVEQ FILTERED OUT AT THIS POINT
+  
         CMP.B       #%1000, D2
         BEQ         OR_INSTRUCTION ;OR
- 
  *OR FILTERED OUT AT THIS POINT
+ 
         CMP.B       #%1001, D2
         BEQ         SUB_INSTRUCTION ;SUB
  
@@ -178,7 +179,7 @@ INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE
   
   *AND FILTERED OUT AT THIS POINT
         CMP.B       #%1101, D2 
-        BEQ         ADD_ADDA ;ADDA, ADD
+        BEQ         ADD_ADDA_MAYBE ;ADDA, ADD
  
  
  *ADD AND ADDA FILTERED OUT AT THIS POINT
@@ -195,12 +196,12 @@ INSTRUCTION_Decifer:           *SUBROUTINE STARTS HERE
         CMP.B       #%0100,D2
         BEQ         NOT_NOP_RTS_MOVEM_LEA_JSR ;NOT, NOP, RTS, MOVEM, LEA, JSR
   
-  *ANY INSTRUCTION NOT READ AFTER WARDS IS A WRONG INSTRUCTION FORMAT
+  *ANY INSTRUCTION NOT READ YET IS IN WRONG FORMAT/NOT INCLUDED IN OUR PROJECT INST. LIST
         
  ***************************************************************************************************************
 WRONG_INSTRUCTION            MOVE.B   #5, D7 ; A WRONG INSTRUCTION 'KEY'
                              MOVEA.L  A2, A6 ;MOVING THE MEMORY ADDRESS INTO A6 WHEN INSTRUCTION IS WRONG 
-                             MOVE.W  (A2)+,D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
+                             MOVE.W  (A2),D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
                              RTS
 *****************************************************************************************************************
         
@@ -209,25 +210,29 @@ WRONG_INSTRUCTION            MOVE.B   #5, D7 ; A WRONG INSTRUCTION 'KEY'
                     
 MOVE_MOVEA      CLR.L   D2
                 MOVE.W  (A2),D2
-                BTST    #12, D2
+                SWAP    D2
+                ROL.L   #4,D2 ;ROLL THE 4 MSB TO THE FRONT 
+                AND.B   #$0F,D2 ;MASK 4 BITS OTHER THATN THE 4 MSB
+                CMP.B   #$0, D2 ;IF THE 4 MSB ARE 0, THEN IT IS ANDI, SUBI ... INSTRUCTIONS 
                 BEQ     WRONG_INSTRUCTION *IF THE 4 MSB ARE 0(FOR INST LIKE ORI, ANDI,SUBI ADDI ETC...), ITS WRONG INST
                
                *ELSE IT'S EITHER MOVE OR MOVEA, SO KEEP PROCESSING
                 CLR.L   D2
                 MOVE.W  (A2),D2
-                LSR.W   #6, D2 ;MOVE THE 9,8,7TH BITS TO THE FRONT 
-                AND.B   #$07, D2 ;MASK THE OTHER BITS EXCEPT 9,8,7
-                CMP.B   #%001, D2 ;IF EQUAL, ITS MOVEA
+                LSR.W   #6, D2 ;MOVE THE 8,7,6TH BITS TO THE FRONT 
+                AND.B   #$07, D2 ;MASK THE OTHER BITS EXCEPT 8,7,6
+                CMP.B   #$01, D2 ;IF EQUAL, ITS MOVEA
                 BEQ     MOVEA_INST
 
                 *ELSE IT IS MOVE
                 
 *------------------ MOVE -----------------------------------------------------------------------  
             
-*01 — Byte operation
-*11 — Word operation
-*10 — Long operation                
+*01 â€” Byte operation
+*11 â€” Word operation
+*10 â€” Long operation                
 MOVE_INST       LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION TAG INTO  A6
+                JSR     MOVE_MOVEA_EA
                 MOVE.W (A2),D2 ;
                 LSR     #8,D2  *MAKE A TOTAL OF 12 SHIFT TO PUSH 12,AND 13 BIT TO FRONT
                 LSR     #4, D2 (8 + 4) SHIFTS JUST NOT TO USE REGISTERS FOR SHIFTING
@@ -247,7 +252,7 @@ MOVE_INST       LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION TAG INTO  A6
                 *ELSE IT'S WRONG SIZE
 WRONG_SIZE      MOVE.B  #5, D7 ;A PUT WRONG SIZE SIGN INTO D7
                 MOVEA.L  A2, A6 ;MOVING THE MEMORY ADDRESS INTO A6 WHEN SIZE/INSTRUCTION IS WRONG 
-                MOVE.W  (A2)+,D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
+                MOVE.W  (A2),D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
                 RTS          ;BACK TO MAIN
                 
 
@@ -257,19 +262,20 @@ WRONG_SIZE      MOVE.B  #5, D7 ;A PUT WRONG SIZE SIGN INTO D7
 *PUTS 1 FOR BYTE, 2 FOR WORD, AND 4 FOR LONG INTO D7 AS A SIGN OF SIZES, AND RTS BACK TO MAIN
                
 **********************************************************************************************************
-BYTE_SIZE       MOVE.B #1, D7
+BYTE_SIZE       ADD.B #1, D7
                 RTS 
    
-WORD_SIZE       MOVE.B  #2, D7
+WORD_SIZE       ADD.B  #2, D7
                 RTS
                 
-LONG_SIZE       MOVE.B  #4, D7
+LONG_SIZE       ADD.B  #4, D7
                 RTS
 *----------------------------------------------------------------------------------------------------------
                 
                
-******************** MOVEA_INST *********************************************
-MOVEA_INST      LEA MOVEA_TAG, A6 
+******************** MOVEA_INST ***************************************************************************
+MOVEA_INST      LEA MOVEA_TAG, A6
+                JSR     MOVE_MOVEA_EA ***** CALL <EA>
                 MOVE.W (A2),D2 ;
                 LSR.L   #8, D2 ;GET THE 13, 12 BITS FOR SIZE
                 LSR.L   #4, D2 ;TOTAL OF 11 SHIFTS 
@@ -285,7 +291,7 @@ MOVEA_INST      LEA MOVEA_TAG, A6
                 JMP     WRONG_SIZE 
                 
           
-               
+**********************************************************************************************************               
 *NOT SURE THAT IT'S ADDQ YET
 ADDQ_MAYBE_INSTRUCTION  CLR.L        D2
                         MOVE.W       (A2),D2
@@ -295,10 +301,10 @@ ADDQ_MAYBE_INSTRUCTION  CLR.L        D2
                         *ELSE IT'S WRONG INSTRUCTION(IT MAY BE SUBQ)
                         JMP           WRONG_INSTRUCTION
  
-
-*00— Byte operation
-*01— Word operation
-*10— Long operation 
+*********************************************************************************************************
+*00â€” Byte operation
+*01â€” Word operation
+*10â€” Long operation 
 *7,6TH BITS ARE THE SIZE BITS FOR ADDQ                        
 ADDQ_INSTRUCTION        CLR.L   D2
                         MOVE.W  (A2),D2
@@ -309,7 +315,8 @@ ADDQ_INSTRUCTION        CLR.L   D2
                         
                         *ELSE IT IS ADDQ                        
                         LEA ADDQ_TAG, A6 * PUT THE SIGN OF THE ADDQ TAG INTO A6
-                   
+                        *JSR     ADDQ_EA ***** CALL <EA>
+
                         MOVE.W      (A2),D2
                         LSR.L        #6, D2
                         AND.B        #$03, D2
@@ -319,21 +326,41 @@ ADDQ_INSTRUCTION        CLR.L   D2
                         BEQ          WORD_SIZE
                         CMP.B        #$2, D2
                         BEQ          LONG_SIZE
+                        
                         ;ELSE,ITS WRONG SIE
-                        BRA          WRONG_SIZE
+                        JMP          WRONG_SIZE
  
+****************************************************************************************************** 
                        
 *15   14   13   12 *POSITION
 *0    1    1    1  * BITS * THESE BITS MAKES MOVEQ UNIQUE FROM ALL INSTRUCTIONS               
 MOVEQ_INSTRUCTION       LEA   MOVEQ_TAG, A6
                         MOVE.B  #0, D7 * SIGN TO SAY IT DOESN'T NEED SIZE BITS 
+                        *JSR     MOVEQ_EA ***** CALL <EA> 
                         RTS
-                        
+*******************************************************************************************************                       
+
+*------------------------------------------------------------------------------------------------------
 *NOTES FOR 'OR'                      
 *Byte   Word    Long Operation
 *000    001     010 < ea > V Dn ? Dn
 *100    101     110 Dn V < ea > ? < ea >                  
-OR_INSTRUCTION          LEA   OR_TAG, A6
+OR_INSTRUCTION          MOVE.W  (A2),D2
+                        LSR.L   #3, D2
+                        AND.B   #$0F,D2
+                        CMP.B   #$3, D2
+                        BEQ     WRONG_INSTRUCTION *FILTER OUT DIVU AND DIVS
+                        MOVE.W  (A2),D2
+                        LSR.L   #4,D2
+                        AND.B   #$1F,D2
+                        CMP.B   #$10,D2
+                        BEQ     WRONG_INSTRUCTION *FILTER OUT "SBCD"
+                        
+                         *ELSE IT IS OR INSTRUCTION
+
+                        LEA   OR_TAG, A6  
+                        JSR     EA1 ***** CALL <EA>
+   
 
 
 
@@ -347,7 +374,7 @@ BIT_MANUP
                         AND.B   #$07,D2
                         CMP.B   #$0,D2
                         BEQ     BYTE_SIZE
-                        CMP.B   #$4, D2 *****THIS SPOT IS STILL UNDERCONSIDERATION FOR EXTRA MANUPLATION FOR 'OR'
+                        CMP.B   #$4, D2 
                         BEQ     BYTE_SIZE
 
                         CMP.B   #$1, D2
@@ -361,75 +388,98 @@ BIT_MANUP
                         BEQ     LONG_SIZE
                         
                         ;ELSE ITS WRONG SIZE
-                        BRA      WRONG_SIZE
-                       
+                        JMP      WRONG_SIZE
+
+
+******************************************************************************************************************                       
 *Byte Word Long Operation
-*000 001 010 Dn – < ea > ? Dn
-*100 101 110 < ea > – Dn ? < ea > 
-SUB_INSTRUCTION         LEA   SUB_TAG, A6
-                        JMP     BIT_MANUP ;DO THE SAME THING AS 'OR'
+*000 001 010 Dn â€“ < ea > ? Dn
+*100 101 110 < ea > â€“ Dn ? < ea > 
+SUB_INSTRUCTION         MOVE.W  (A2),D2
+                        LSR.L   #6,D2
+                        AND.B   #$03,D2
+                        CMP.B   #$3,D2
+                        BEQ     WRONG_INSTRUCTION * FILTER OUT "SUBA"
+                        MOVE.W  (A2),D2
+                        BTST    #8,D2 *TEST THE 8TH BIT
+                        BNE     SUB_FILTER
+
+SUB_FINAL               LEA     SUB_TAG, A6
+                        JSR     EA1 ***** CALL <EA>
                         
+                        JMP     BIT_MANUP ;FIGURE OUT SIZE OF OPERANDS
                         
+SUB_FILTER              MOVE.W  (A2),D2
+                        LSR.L    #4,D2
+                        AND.B    #$03,D2
+                        CMP.B    #$0,D2
+                        BEQ       WRONG_INSTRUCTION     *FILTER OUT "SUBX" INSTRUCTION
+                        
+                        *ELSE IT IS SUB INSTRUCTION
+                        JMP       SUB_FINAL     *PUT SUB_TAG TAG AND READ SIZE     
+                        
+*---------------------------------------------------------------------------------------------------------------                        
                         
                        
+****************************************************************************************************************
 *FILLTER OUT OTHER INSTRUCTIONS WITH MSB 1100    
-AND_MAYBE_INSTRUCTION   CLR.L     D2
-                        MOVE.W    (A2),D2
+AND_MAYBE_INSTRUCTION   CLR.L      D2
+                        MOVE.W     (A2),D2
                         LSR.L      #6,D2
                         AND.B      #$03,D2
                         CMP.B      #$03,D2
-                        BEQ         WRONG_INSTRUCTION *THIS INSTRUCTION IS MULU INSTRUCTION
-                        CMP.B       #$07, D2
-                        BEQ          WRONG_INSTRUCTION *THIS INSTRUCTION IS MULS INSTRUCTION
-                        
-                        *ELSE KEEP FILTERING                                                                      
-                      
-                        CLR.L   D2
-                        MOVE.W  (A2),D2
-                        LSR.L   #3,D2 ;RAD THE LAST 2,1,0 BITS 
-                        AND.B   #$07,D2 *MASK THEM
-                        CMP.B   #$01,D2 ;IF 001, THEN IT MAY BE OTHER INSTRUCTIONS
-                        BEQ     WRONG_INSTRUCTION *FILTER OUT EXG AND ABCD INSTRUCTION 
-                        
-                        *ELSE IT IS AND INSTRUCTION 
-
-*Byte Word Long Operation
-*000 001 010 < ea > ? Dn ? Dn
-*100 101 110 Dn ? < ea > ? < ea >                         
+                        BEQ        WRONG_INSTRUCTION *THIS INSTRUCTION CAN BE MULU OR MULS
+                        MOVE.W     (A2),D2
+                        BTST       #8,D2
+                        BNE        AND_FURTHER_FILTER     
+                                   
+                        *ELSE IS IT AND INSTRUCTION                        
 AND_INSTRUCTION         LEA   AND_TAG,A6
+                        JSR   EA1 ***** CALL <EA>
                         JMP    BIT_MANUP ;JUMP TO BIT_MANUP SUBROUTIN
-                        
-                        
-                        
+
+AND_FURTHER_FILTER      CLR.L      D2
+                        MOVE.W     (A2),D2
+                        LSR.L      #4,D2
+                        AND.B      #$03,D2
+                        CMP.B      #$0,D2
+                        BEQ        WRONG_INSTRUCTION *FILTER OUT EXG AND ABCD INSTRUCTIONS
+                        JMP        AND_INSTRUCTION
+                
+
+**************************************************************************************************************
 
 
-**********************************************************************************************
-
-*----------------ADD_ADDA SUBROUITNE --------------------------------------------------------
-
-************************************************************************************************
-ADD_ADDA        CLR.L     D2
-                MOVE.W   (A2),D2
-                LSR      #6, D2
-                AND.B    #$07, D2 ;MASK THE BITS BEFORE BIT 8TH
-                CMP.B    #$03, D2 ;IF THE 8, 7,6TH BIT ARE EITHER 011 OR 111, ITS ADDA
-                BEQ     ADDA_INST
-                CMP.B    #$07, D2 ;IF 8,7,6 BITS ARE 111, THEN ITS ADDA AGAIN 
-                BEQ      ADDA_INST
+*ADD_ADDA SUBROUITNE
+**************************************************************************************************************
+ADD_ADDA_MAYBE      CLR.L     D2
+                    MOVE.W   (A2),D2
+                    BTST     #8,D2 
+                    BEQ      ADD_ADDA_ADDX  
+    
+ADD_ADDA_RETURN     LSR      #6, D2
+                    AND.B    #$07, D2 ;MASK THE BITS BEFORE THE 8TH BIT
+                    CMP.B    #$03, D2 ;IF THE 8, 7,6TH BIT ARE EITHER 011 OR 111, ITS ADDA
+                    BEQ     ADDA_INST
+                    CMP.B    #$07, D2 ;IF 8,7,6 BITS ARE 111, THEN ITS ADDA AGAIN 
+                    BEQ      ADDA_INST
                 
                 *ELSE ITS ADD INSTRUCTION
-                
-*Byte Word Long Operation
-*000 001 010 < ea > + Dn ? Dn
-*100 101 110 Dn + < ea > ? < ea >                  
+
+
+*-------------------------------------------------------------------------------------------------------------                                 
 ADD_INST        LEA     ADD_TAG, A6 ;PUT ADD_TAG INTO A6 FOR PRINT
+                JSR     EA1 ***** CALL <EA>
                 JMP     BIT_MANUP ;DEERMIN SiZE FROM BIT_MANUP SUBROUTINE
                 
-               
-*Opmode field—Specifies the size of the operation.
-*011— Word operation; 
-*111— Long operation. 
+*************************************************************************************************************
+
+
+*----------------------------------------------------------------------------------------------------------               
+*011â€” Word operation; 
+*111â€” Long operation. 
 ADDA_INST       LEA     ADDA_TAG, A6
+                JSR     EA4   ***** CALL <EA>
                 MOVE.W  (A2),D2
                 LSR.L   #6,D2
                 AND.B   #$07,D2 ;MASK THE 8, 7, 6 BITS
@@ -440,55 +490,59 @@ ADDA_INST       LEA     ADDA_TAG, A6
                 
                 *ELSE WRONG SIZE
                 JMP     WRONG_SIZE
+************************************************************************************************************
+ADD_ADDA_ADDX   MOVE.W  (A2),D2
+                LSR.L   #4,D2
+                AND.B   03,D2
+                CMP.B   #$0,D2
+                BEQ     WRONG_INSTRUCTION *IT IS ADDX INSTRUCTION
                 
-                       
+                *ELSE IT IS ADD OR ADDA
+                MOVE.W  (A2),D2
+                JMP     ADD_ADDA_RETURN 
+*----------------------------------------------------------------------------------------------------------                       
 SHIFT        CLR.L     D2
              MOVE.W    (A2),D2 ;
              LSR       #6, D2 ;MOVE THE 6,AND 7 BITS TO THE FRONT
              AND.B     #$03, D2  ;MASK THE OTHER BITS
-             CMP.B     #$03, D2 ;IF THE LSB (FROM 6,7)ARE 011
+             CMP.B     #$03, D2 ;IF THE LSB (FROM 6,7)ARE 11, IT IS A MEMORY SHIFT
              BEQ       MEMORY_SHIFT ;IF THE 6,7TH BITS ARE 11, IT'S MEMORY SHIFT 
          
             *ELSE IT IS A REGISTER SHIFT
-*-------------REGISTER SHIFTS --------------------------------------------------------------------------
-*Size field—Specifies the size of the operation.
-*00 — Byte operation
-*01 — Word operation
-*10 — Long operation             
+*-------------REGISTER SHIFTS --------------------------------------------------------------------------            
 REGISTER_SHIFT  CLR.L   D2
                 MOVE.W  (A2),D2
                 LSR     #3, D2 ;BRING THE 4TH AND 3RD BITS TO FRONT 
                 AND.B   #$03, D2 ;MASK BITS OTHR THAN 2 LSM 
                 CMP.B   #$00, D2
-                BEQ     REGISRER_ARTHIMETIC
+                BEQ     REGISRER_ARTHIMETIC *(ALd)
                 CMP.B   #$01,D2
-                BEQ     REGISTER_LOGICAL
+                BEQ     REGISTER_LOGICAL *(LSd)
                 CMP.B   #$03, D2
-                BEQ     REGISTER_ROTATE
+                BEQ     REGISTER_ROTATE *(ROd)
                 
-                 ;ELSE WRONG INSTR IF 4, 3 BITS ARE 1 0
+                 ;ELSE WRONG INSTR IF 4, 3 BITS ARE 1 0 , WHICH IS ROXd
                 JMP     WRONG_INSTRUCTION 
+*-------------------------------------------------------------------------------------------------------
               
 REGISRER_ARTHIMETIC     CLR.L      D2
                         MOVE.W     (A2),D2
-                        LSR        #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
-                        AND.B      #01, D2
-                        CMP.B      #01, D2
-                        BEQ        REGISTER_ARTIMETIC_LEFT
+                        BTST       #8,D2 ;TEST THE 8TH BIT IF CLEAR/SET 
+                        BNE        REGISTER_ARTIMETIC_LEFT *IF 8TH BIT IS 1, IT IS REGISTER ASL
+                       
+                        *ELSE IT IS EGISTER ASR
 
+                        LEA ASR_TAG,A6 *MOVE ASL_TAG INTO A6
+                        *JSR  EA2 ***** CALL <EA>
+                        
+                        *THEN SIZE OF TH OPERANDS 
 
-*********************************************************************************************************
-
-*---------------------- REGISTER ARTHIMETIC SHIFT -------------------------------------------------------
-
-**********************************************************************************************************
-                        LEA ASR_TAG,A6 
-
-REGISTER_BIT_MANUP      CLR.L       D2
+REGISTER_BIT_MANUP      CLR.L      D2
                         MOVE.W     (A2),D2
-                        LSR.W       #6, D2 *----------------------------------------------------
+                        LSR.W      #6, D2 * THE 7TH SND 6TH BITS ARE SIZE BITS, MOVE THEM TO THE FRONT 
                         AND.B      #$03,D2
                          
+*--------------------------------------------------------------------------------------------------------                        
 REG_SHIFT_SIZE          CMP.B      #$0,D2
                         BEQ        BYTE_SIZE ;call BYTE_SIZE method
                         CMP.B      #$01,D2
@@ -498,27 +552,29 @@ REG_SHIFT_SIZE          CMP.B      #$0,D2
                                                 
                         *ELSE WRONG SIZE
                         JMP           WRONG_SIZE  ;CALL WRONG_SIZE  METHOD               
-                                          
-REGISTER_ARTIMETIC_LEFT LEA  ASL_TAG, A6 
-                        JMP   REGISTER_BIT_MANUP 
-            
+                
+************************************************************************************************************                                          
+REGISTER_ARTIMETIC_LEFT LEA  ASL_TAG, A6
+                        *JSR     EA2 ***** CALL <EA>
+                        JMP   REGISTER_BIT_MANUP *DETERMINE SIZE OF THE OPERANDS 
+*--------------------------------------------------------------------------------------------------------            
          
 REGISTER_LOGICAL        CLR.L      D2
                         MOVE.W     (A2),D2
-                        LSR        #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
-                        AND.B      #01,D2
-                        CMP.B      #1, D2
-                        BEQ        REGISTER_LOGICAL_LEFT
+                        BTST       #8,D2 ;GET THE 8TH BIT TOTHE FRONT 
+                        BNE        REGISTER_LOGICAL_LEFT
                         
                         *ELSE IT IS REGISTER_LOGICAL _RIGH(LSR)
-                        LEA  LSR_TAG, A6  
+                        LEA  LSR_TAG, A6
+                        *JSR     EA2 ***** CALL <EA> 
                         JMP     REGISTER_BIT_MANUP 
                         
-                        
+******************************************************************************************************                        
 REGISTER_LOGICAL_LEFT   LEA     LSL_TAG, A6
+                        *JSR     EA2 ***** CALL <EA>
                         JMP     REGISTER_BIT_MANUP 
 
-                        
+*----------------------------------------------------------------------------------------------------                        
 REGISTER_ROTATE         CLR.L      D2
                         MOVE.W     (A2),D2
                         BTST       #8, D2 ;TEST THE DIRECTION BIT(8TH BIT)
@@ -526,12 +582,11 @@ REGISTER_ROTATE         CLR.L      D2
                         
                         ;ELSE REGISTER_ROTATE RIGHT
                         LEA     ROR_TAG, A6
-                        JMP REGISTER_BIT_MANUP     
-
-                        
-
+                        *JSR     EA2 ***** CALL <EA>
+                        JMP     REGISTER_BIT_MANUP     
 
 REGISTER_ROTATE_LEFT    LEA     ROL_TAG, A6
+                        *JSR     EA2 ***** CALL <EA>
                         JMP     REGISTER_BIT_MANUP
 
              
@@ -553,28 +608,24 @@ MEMORY_SHIFT    CLR.L     D2
                 BEQ       MEMORY_ROTATE ;ROTATE SHIFT (ROd)
                 
                 ;ELSE WRONG INSTRUCTION
-                JMP    WRONG_INSTRUCTION
-         
-                
-     
+                JMP    WRONG_INSTRUCTION *IT IS ROXd INSTRUCTION
+                            
 MEMORY_ARTIMETIC   CLR.L      D2
                    MOVE.W     (A2),D2
                    BTST       #8, D2 ;TEST THE DIRECTION BIT(8th BIT)
                    BNE        MEMORY_ARTIMETIC_LEFT    ;IF NOT ZERO, IT'S ASL
                    
                    ;ELSE MEMEORY_ARTIMETIC_RIGHT (ASR)
-                    LEA     ASR_TAG, A6 
+                    LEA     ASR_TAG, A6
+                    *JSR     EA4  ***** CALL <EA>
+                    
 LEGAL_INST_NO_SIZE  MOVE.B  #0, D7 *MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED 
                     RTS
 
-                       
-
-
 
 MEMORY_ARTIMETIC_LEFT   LEA     ASL_TAG, A6 
+                        *JSR     EA4 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
-
-
   
 MEMORY_LOGICAL     CLR.L     D2
                    MOVE.W    (A2),D2
@@ -582,16 +633,15 @@ MEMORY_LOGICAL     CLR.L     D2
                    BNE       MEMORY_LOGICAL_LEFT  ;LSL   
                   
                   ;ELSE MEMEORY_LOGICAL_RIGHT
-                   LEA     ASR_TAG, A6 
+                   LEA     ASR_TAG, A6
+                   *JSR     EA4 ***** CALL <EA>
                    JMP    LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
 
 
 
-MEMORY_LOGICAL_LEFT     LEA     LSL_TAG, A6 
+MEMORY_LOGICAL_LEFT     LEA     LSL_TAG, A6
+                        *JSR     EA4 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
-
-
-
 
 
 MEMORY_ROTATE      CLR.L     D2
@@ -600,21 +650,19 @@ MEMORY_ROTATE      CLR.L     D2
                    BNE       MEMORY_ROTATE_LEFT 
                     
                    *ELSE IT SI MEMORY ROTATE RIGHT (ROR)
-                   LEA     ROR_TAG, A6 
+                   LEA     ROR_TAG, A6
+                   *JSR     EA4 ***** CALL <EA>
                    JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
-
-
-
-
-MEMORY_ROTATE_LEFT      LEA     ROL_TAG, A6 
+MEMORY_ROTATE_LEFT      LEA     ROL_TAG, A6
+                        *JSR     EA4 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
-
-
 *----------------------END OF SHIFT INSTRUCTIONS -----------------------------------------------------------
+
+***********************************************************************************************************
 BRA_BGT_BLE_BEQ         CLR.L   D2
                         MOVE.W  (A2),D2
                         LSR.L   #8, D2 ;GET THE 11, 10,9,AND 8TH BITS TO THE FRONT  
@@ -625,36 +673,32 @@ BRA_BGT_BLE_BEQ         CLR.L   D2
                         BEQ     BGT_INST ;BGT
                         CMP.B   #$0F, D2
                         BEQ     BLE_INST ;BLE
-                        CMP.B   #$07, D2 *-------------------------------------------------------------------------------------
+                        CMP.B   #$07, D2 
                         BEQ     BEQ_INST ;BEQ
                         
-                        ;PUT CODE ELSE WRONG INST
-                        JMP WRONG_INSTRUCTION
-                        
+                        ;ELSE WRONG INST
+                        JMP WRONG_INSTRUCTION                        
                        
-BRA_INST                LEA     BRA_TAG, A6 *MOVE THE TAG NAMEE
-                        JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
-
-
-
+BRA_INST        LEA     BRA_TAG, A6 *MOVE THE TAG NAME
+                JMP     BRANCH_RTS 
+                      
+                        *JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
                         
-BGT_INST                LEA  BGT_TAG,A6 *MOVE THE TAG NAMEE
-                        JMP   LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+BGT_INST        LEA  BGT_TAG,A6 *MOVE THE TAG NAMEE
+
+                JMP   BRANCH_RTS ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+              
+                        
+BRANCH_RTS      MOVE.B  #8,D7
+                MOVE.W  (A2),D6
+                RTS  
+                
+BLE_INST        LEA  BLE_TAG,A6 *MOVE THE TAG NAMEE
+                JMP  BRANCH_RTS ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS 
 
 
-  
-BLE_INST                LEA  BLE_TAG,A6 *MOVE THE TAG NAMEE
-                        JMP  LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
-
- 
-
-
-BEQ_INST                LEA  BEQ_TAG,A6 *MOVE THE TAG NAMEE
-                        JMP  LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
-
-
- 
-
+BEQ_INST        LEA  BEQ_TAG,A6 *MOVE THE TAG NAMEE
+                JMP  BRANCH_RTS ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 NOT_NOP_RTS_MOVEM_LEA_JSR        CLR.L D2
                                  MOVE.W (A2),D2
@@ -666,88 +710,206 @@ NOT_NOP_RTS_MOVEM_LEA_JSR        CLR.L D2
                                         
                                  CLR.L  D2
                                  MOVE.W (A2),D2
-                                 LSR    #6, D2 *PUSH 11TH, 10TH, 9TH, 8TH, 7TH,AND 6TH BITS TO THE FRONT 
-                                 AND.B  #$3F,D2 ;MASK BITS
-                                 CMP.B  #$3A, D2 
-                                 BEQ    JSR_INST ;JSR
-                                 
-                                 CLR.L  D2
-                                 MOVE.W (A2),D2
-                                 LSR    #8, D2
-                                 AND.B  #$FF,D2
-                                 CMP.B  #$46,D2
+                                 LSR.L  #8, D2
+                                 AND.B  #$0F,D2
+                                 CMP.B  #$06,D2
                                  BEQ    NOT_INST ;NOT
-                                
-                                 CLR.L  D2
+                                 
                                  MOVE.W (A2),D2
-                                 LSR.L  #7, D2
-                                 AND.B  #$1F,D2
-                                 CMP.B  #$19,D2 *******************
-                                 BEQ    MOVEM_MEMORY_TO_REGISTER_INST *MOVEM(FROM REGISTER TO MEMEORY)
-                                 CMP.B  #$11, D2
-                                 BEQ    MOVEM_REGISTER_TO_MEEMORY_INST *MOVEM (FROM MEMORY TO REGISTER)
-                                        
-                                 MOVE.W (A2),D2
-                                 LSR    #6, D2
+                                 LSR.L    #6, D2
                                  AND.B  #$07,D2
                                  CMP.B  #$07,D2
-                                 BEQ    LEA_INST
+                                 BEQ    LEA_INST *LEA
+    
+                                 MOVE.W (A2),D2
+                                 LSR.L  #8, D2 *MAKE A TOTAL OF 9 LSR
+                                 LSR.L  #1,D2
+                                 AND.B  #$07,D2 ;MASK BITS
+                                 CMP.B  #$07, D2 
+                                 BEQ    JSR_MAYBE_INST ;JSR, BUT NEED FURTHER FILTER 
                                  
-                                 *ELSE IT IS WRONG INSTRUCTION
-                                 JMP WRONG_INSTRUCTION 
- 
+CHECK_FOR_MOVEM                  MOVE.W (A2),D2
+                                 BTST   #11,D2
+                                 BNE    MOVEM_MAYBE_INST
                                  
-       
+                                 *ELSE WRONG INSTRUCTION
+                                 JMP WRONG_INSTRUCTION  
+                                 
 
+JSR_MAYBE_INST  MOVE.W  (A2),D2
+                LSR.L   #6,D2 *GET 8,7,6TH BITS
+                AND.B   #$07,D2 *MASK UNWANTED BITS
+                CMP.B   #$02,D2 *CHECK IF %010
+                BEQ     JSR_INST *IF TRUE, IT IS JSR
+               
+                *ELSE GO BACK AND CHECK FOR MOVEM
+                JMP     CHECK_FOR_MOVEM 
+                  
 
-
-NOP_INST      LEA NOP_TAG, A6 
+NOP_INST      LEA NOP_TAG, A6
+              CLR.B     D6 *CLEARING D6 TO SIGNIFY IT IS A COMPLETE OPCODE FOR MAIN SUBROUTINE              
               JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
 RTS_INST      LEA RTS_TAG, A6 
+              CLR.B     D6 *CLEARING D6 TO SIGNIFY IT IS A COMPLETE OPCODE FOR MAIN SUBROUTINE            
               JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+              
 
+NOT_INST      LEA NOT_TAG,  A6
+              *JSR       EA3 ***** <EA>  
+              MOVE.W        (A2),D2
+              LSR.L         #6,D2
+              AND.B         #$03,D2
+              CMP.B         #$0,D2
+              BEQ           BYTE_SIZE *BYTE SIZE
+              CMP.B         #$01,D2
+              BEQ           WORD_SIZE *WORD SIZE
+              CMP.B         #$02,D2
+              BEQ           LONG_SIZE *LONG SIZE
+              JMP           WRONG_SIZE *ELSE WRONG SIZE
 
-
-JSR_INST      LEA JSR_TAG, A6 
-              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
-
-
-
-NOT_INST      LEA NOT_TAG, A6 
-              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
-
-
-
-
-*MOVEM_INST ;TEME WANTS ME TO ADD 'SIZE + 5' ONTO D7-------------------------
-*MOVEM(FROM REGISTER TO MEMEORY)
-MOVEM_MEMORY_TO_REGISTER_INST   LEA     MOVEM_TAG, A6
-                                MOVE.W  (A2),D2
-                                BTST    #6, D2  *TEST THE 6TH BIT(SIZE BIT)
-                                BEQ     MOVEM_WORD_SIZE *IF 0, ITS WORD
-                                JMP     MOVEM_LONG_SIZE  *ELSE LONG     
-
-
-
-*MOVEM (FROM MEMORY TO REGISTER)
-MOVEM_REGISTER_TO_MEEMORY_INST  LEA     MOVEM_TAG, A6
-                                MOVE.W  (A2),D2
-                                BTST    #6, D2  *TEST THE 6TH BIT(SIZE BIT)
-                                BEQ     MOVEM_WORD_SIZE *IF 0, ITS WORD
-                                JMP     MOVEM_LONG_SIZE  *ELSE LONG  
-
-
-
-MOVEM_WORD_SIZE      MOVE.B  #7, D7
-                     RTS 
+JSR_INST      LEA     JSR_TAG, A6
+              JSR       EA3                     EA3 ***** <EA>  
+              JMP     LEGAL_INST_NO_SIZE      
                     
-MOVEM_LONG_SIZE      MOVE.B  #9, D7
-                     RTS
 
-LEA_INST             LEA NOT_TAG, A6 
-                     JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+LEA_INST      LEA NOT_TAG, A6
+              JSR       EA4  EA3 ***** <EA>  
+              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED.
+       
+ 
+*----------------------MOVEM SUBROUTINE----------------------------------------------------------                    
+MOVEM_MAYBE_INST     MOVE.W     (A2),D2
+                     LSR.L      #7,D2
+                     AND.B      #$07,D2
+                     CMP.B      #$1,D2 *IF 9,8,7TH BITS ARE %001, IT COULD BE MOVEM OR EXT INST.
+                     BEQ        MOVEM_EXT_INST *AT THIS POINT MOVEM AND EXT MAY HAVE THE SAME OPCODE
+                     
+                     *ELSE WRONG INSTRUCTION
+                     JMP        WRONG_INSTRUCTION
+
+
+MOVEM_EXT_INST       MOVE.W     (A2),D2
+                     LSR.L      #3,D2
+                     AND.B      #$07,D2
+                     CMP.B      #$0,D2
+                     BEQ        WRONG_INSTRUCTION *FITER OUT EXT INSTRUCTION
+                      
+                      *ELSE IT IS MOVEM INSTRUCTION, SO KEEP PROCESSING
+                     MOVE.W    (A2),D2
+                     BTST      #10,D2 *TEST THE DIRECTION (D) BIT
+                     BEQ       MOVEM_REGISTER_TO_MEMORY *IF DIRECTION BIT IS 0->Register to memory. 
+                      
+                      *ELSE IF 1->Memory to register. 
+                      
+*6TH BIT HOLDS size of the registers being transferred.
+*0 â€” Word transfer
+*1 â€” Long transfer                      
+MOVEM_MEMORY_TO_REGISTER   BTST  #6,D2  
+                           BEQ   MOVEM_WORD_SIZE *WORD SIZE
+                           JMP   MOVEM_LONG_SIZE *ELSE LONG SIZE   
+                                                              
+MOVEM_REGISTER_TO_MEMORY   JMP  MOVEM_MEMORY_TO_REGISTER
+ 
+MOVEM_WORD_SIZE            LEA MOVEM_TAG,A6
+                           MOVE.B  #7, D7
+                           *JSR  MOVEM_EA  EA3 ***** <EA>  
+                           RTS 
+                    
+MOVEM_LONG_SIZE            LEA MOVEM_TAG,A6 
+                           MOVE.B  #9, D7
+                           *JSR  MOVEM_EA  EA3 ***** <EA>  
+                           RTS
+
+
+
+
+
+                ******************************************************************
+                                ******  DANIEL  ***************
+                ******************************************************************
+                
+                
+BITS0TO5_MASK   EQU %00111111
+BITS7TO8_MASK   EQU %11000000
+BITS9TO11_MASK  EQU %00000111000000000
+ 
+BITS0TO5_MASK   EQU %00111111
+BITS7TO8_MASK   EQU %11000000
+BITS9TO11_MASK  EQU %00000111000000000
+ 
+EA1     MOVE.W  (A2),D1                 * Prepare to capture register field
+        MOVE.W  (A2),D2                 * Prepare to capture EA field
+        ANDI.B  #BITS0TO5_MASK,D1       * Isolate the source EA bits
+        
+        ANDI.W  #BITS9TO11_MASK,D2      * Isolate the source EA bits
+        MOVE.B  #9,D3                   * Prepare shift count
+        LSR.W   D3,D2                   * Move register bits right
+        ANDI.B  #%11000111,D2           * Set EA mode
+        BTST    #8,(A2)                 * Check opmode
+        BEQ     EA1_MODE_ZERO           * Check opmode
+        
+EA1_MODE_ONE    MOVE.W  D1,D5           * Set EA as destination
+                MOVE.W  D2,D6           * Set register as source
+                BRA EA1_END             * Complete subroutine
+        
+EA1_MODE_ZERO   MOVE.W  D1,D6           * Set EA as source
+                MOVE.W  D2,D5           * Set register as destination
+
+EA1_END         ORI.B   #BITS7TO8_MASK,D6       * Populate the S and D bits
+                RTS
+        
+EA2             MOVE.W  (A2),D6         * Prepare to capture source EA
+                ANDI.W  #BITS9TO11_MASK,D6      * Isolate the source EA bits
+                MOVE.B  #9,D3                   * Prepare shift count
+                LSR.W   D3,D6                   * Move register bits right
+                BTST    #5,(A2)           * Check whether shift count is immediate
+                BEQ     EA2_IMMEDIATE
+
+EA2_REGISTER    ORI.B   #%11000000,D6   * Set S and D bits
+                BRA     EA2_END         * Complete subroutine
+                
+EA2_IMMEDIATE   MOVE.B  #10,D7          * Prepare to pass immediate data to print subourtine 
+                
+EA2_END         MOVE.W  (A2),D5         * Prepare to capture destination EA
+                AND.B   #%00000111,D5
+                RTS
+   
+EA3     MOVE.W  (A2),D6
+        ANDI.B  #BITS0TO5_MASK,D6       * Isolate the source EA bits
+        ORI.B   #%10000000,D6
+        RTS
+
+EA4     MOVE.W  (A2),D1         
+        ANDI.B  #BITS0TO5_MASK,D1       * Isolate the source EA bits
+        ORI.B   #BITS7TO8_MASK,D1       * Populate the S and D bits
+        MOVE.B  D1,D6                   * Pass source EA to print subroutine
+        MOVE.W  (A2),D1         
+        
+        ANDI.W  #BITS9TO11_MASK,D1   * Isolate the destination register number
+        MOVE.B  #9,D2                   * Prepare shift count
+        LSR.W   D2,D1                   * Move register bits right
+        ANDI.B  #%11001111,D1           * Set destination mode
+        ORI.B   #%00001000,D1           * Set destination mode
+        MOVE.B  D1,D5                   * Pass destination EA to print subroutine
+        RTS
+        
+MOVE_MOVEA_EA   MOVE.W  (A2),D1
+                ANDI.B  #BITS0TO5_MASK,D1           * Isolate the source EA bits
+                ORI.B   #BITS7TO8_MASK,D1           * Populate the S and D bits
+                MOVE.B  D1,D6                   * Pass source EA to print subroutine
+                MOVE.W  (A2),D1         
+                MOVE.W  (A2),D2 
+                ANDI.W  #BITS9TO11_MASK,D1   * Isolate the destination register number
+                MOVE.B  #9,D3                   * Prepare shift count
+                LSR.W   D3,D1                   * Move destination register bits right
+                ANDI.W  #%0000000111000000,D2   * Isolate the destination mode
+                LSR.W   #3,D2                  * Move destination mode bits right
+                OR.W    D2,D1
+                MOVE.B  D1,D5                   * Pass destination EA to print subroutine
+                RTS
+   
 
 
 *****************************************************************************************
@@ -777,13 +939,27 @@ LEA_INST             LEA NOT_TAG, A6
 *                                                               the destination)
 *                                              -> reg + mod = EA and mode
 *                       DATA (OR BAD INSTRUCTION) -> for bad print
-*               D5      DESTINATION EA (00-mod-reg)
+*
 
 PRINT_INSTRUCTION       MOVEM.L     A0-A1/A3-A6/D0-D7,-(SP)     * BACKUP REGISTERS
+                        
                         CMP.B   #5,D7                           * 5 = BAD PRINT
-                        BEQ     BAD_PRINT                       * JUMP TO BAD PRINT
-                        CMP.B   #7,D7                           * 7 & 9 MOVEM
-                        BGE     PRINT_MOVEM
+                        BEQ     BAD_PRINT                       
+                        CMP.B   #7,D7                           * 7 = MOVEM.W
+                        BEQ     PRINT_MOVEM
+                        CMP.B   #8,D7                           * 8 = BRA
+                        BEQ     PRINT_BRA
+                        CMP.B   #9,D7                           * 9 = MOVEM.L
+                        BEQ     PRINT_MOVEM
+                        CMP.B   #10,D7                           * 10 = ADDQ,SUBQ
+                        BEQ     PRINT_QUICK_TYPE
+                        CMP.B   #11,D7                           * 11 = ASR.B,LSR.B...
+                        BEQ     PRINT_QUICK_TYPE
+                        CMP.B   #12,D7                           * 12 = ASR.W,LSR.W...
+                        BEQ     PRINT_QUICK_TYPE
+                        CMP.B   #14,D7                           * 14 = ASR.L,LSR.L...
+                        BEQ     PRINT_QUICK_TYPE
+
                         
 PRINT_INST_TAG          JSR     PRINT_TAB
                         MOVE.L  A6,A1                       * PRINT INSTRUCTION
@@ -809,6 +985,36 @@ PRINT_INST_TAG          JSR     PRINT_TAB
 PRINT_INSTRUCTION_RETURN    JSR         PRINT_NEWLINE
                             MOVEM.L     (SP)+,A0-A1/A3-A6/D0-D7
                             RTS                         * RETURN TO THE CALLER
+*_______________________________________________________________________________________
+
+
+
+*___________________    PRINT THE QUICK TYPES   ________________________________________
+*   PARAMETR    A6      INSTRUCTION TAG
+*               D6      THE IMMIDIATE VALUE
+*               D5      THE REGISTER MODE AND CODE
+*               D7      SIZE + 10
+
+PRINT_QUICK_TYPE        MOVE.L      A6,A1                   * PRINT THE INSTRUCTIO TAG
+                        MOVE.B      #14,D0
+                        TRAP        #15
+                        
+                        SUB.B       #10,D7
+                        JSR         PRINT_SIZE              * PRINT SIZE
+                        JSR         PRINT_TAB               * RRINT TAB
+                        
+                        CLR.L       D1
+                        
+                        JSR         PRINT_HASH_SIGN         * #
+                        MOVE.B      D6,D1                   * PRINT DECIMAL
+                        MOVE.L      #3,D0
+                        TRAP        #15
+                        JSR         PRINT_COMMA             * ,
+                        
+                        MOVE.B      D5,D4
+                        JSR         PRINT_EA                * PRINT THE REGISTER
+                        
+                        JMP         PRINT_INSTRUCTION_RETURN
 *_______________________________________________________________________________________
 
 
@@ -889,6 +1095,49 @@ PRINT_MASK_RETURN       MOVEM.L     (SP)+, ALL_REG
 
 
 
+*___________________    PRINT BRA   ____________________________________________________
+*   PARAMETER       A6      BRA_TAG
+*                   D6      THE OP-CODE
+
+PRINT_BRA       JSR         PRINT_TAB
+                MOVE.L      A6,A1           * PRINT THE BRA_TAG
+                MOVE.B      #14,D0
+                TRAP        #15
+                JSR         PRINT_TAB       * PRINT TAB
+                
+                CLR.L       D1
+                
+                CMP.B       #$00,D6                 * WORD DISPLACEMENT
+                BEQ         WORD_DISPLACEMENT
+                CMP.B       #$FF,D6                 * LONG DISPLACEMENT
+                BEQ         LONG_DISPLACEMENT
+                
+                MOVE.B      D6,D1                   * BYTE DISPLACEMENT
+                CMP.W       #$7F,D1                 
+                BLE         PRINT_BRA_RETURN        * POSITIVE DISPLACEMENT
+                
+                NOT.B       D1                      * 1'S COMPLEMENT    (ON BYTE)
+                ADD.B       $1,D1                   * -> 2'S COMPLEMENT
+                NEG.L       D1
+                BRA         PRINT_BRA_RETURN
+
+WORD_DISPLACEMENT       MOVE.W      (A2)+,D1         * READ THE DISPLACEMENT (WORD)
+            
+                        CMP.L       #$7FFF,D1
+                        BLE         PRINT_BRA_RETURN        * POSITIVE DISPLACEMENT
+                        
+                        NOT.W       D1                      * 1'S COMPLEMENT    (ON WORD)
+                        ADD.W       $1,D1                   * -> 2'S COMPLEMENT
+                        NEG.L       D1
+                        BRA         PRINT_BRA_RETURN
+
+LONG_DISPLACEMENT           MOVE.L      (A2)+,D1         * READ THE DISPLACEMENT (LONG)
+    
+PRINT_BRA_RETURN    MOVE.L  #3,D0                   * PRINTIN THE DISPLACEMENT
+                    TRAP    #15
+                    JMP     PRINT_INSTRUCTION_RETURN
+*_______________________________________________________________________________________
+
 
 *___________________    BAD PRINT   ____________________________________________________
 *   PARAMETER       A6      MEMORY LOCATION
@@ -905,7 +1154,7 @@ BAD_PRINT       MOVE.L  A6,D5
                 MOVE.W  D6,D5
                 MOVE.B  #2,D3
                 JSR     PRINT_HEX
-                BRA     PRINT_INSTRUCTION_RETURN                
+                JMP     PRINT_INSTRUCTION_RETURN                
                 
 *_______________________________________________________________________________________
 
@@ -984,7 +1233,7 @@ PRINT_SIZE_RETURN   MOVEM.L (SP)+,ALL_REG
 *______________     PRINT EA    ___________________________________________________
     *PARAMETER      D4      (--MODreg)
     
-PRINT_EA        MOVEM.L ALL_REG,-(SP)
+PRINT_EA        MOVEM.L A0-A1/A3-A6/D0-D7,-(SP)
                 MOVE.B  #$38,D3
                 AND.B   D4,D3
                 AND.B   #$7, D4
@@ -1066,7 +1315,7 @@ READ_WORD_IMM       JSR     PRINT_HASH_SIGN     * #
                     MOVE.B  #2,D3
                     JSR     PRINT_HEX
 
-PRINT_EA_RETURN     MOVEM.L     (SP)+,ALL_REG   * THE RETURN FOR THE EA PRINTER
+PRINT_EA_RETURN     MOVEM.L     (SP)+,A0-A1/A3-A6/D0-D7   * THE RETURN FOR THE EA PRINTER
                     RTS
 *___________________________________________________________________________________
 
@@ -1295,7 +1544,4 @@ ADDRESS_ERROR_TAG   DC.B    LF,LF,HT,HT,'INVALID ADDRESS.',CR,LF,CR,LF,0
 
 
 
-*~Font name~Courier New~
-*~Font size~14~
-*~Tab type~1~
-*~Tab size~4~
+
