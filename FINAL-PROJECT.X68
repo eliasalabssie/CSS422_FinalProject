@@ -15,14 +15,14 @@
 *the size of the instruction will be returned on register D6
 *the address of ilegal instruction will be returned via register A6
 *-------------------------------------------------------------------------
-test    dc.W    $3000
+test    dc.W    $2038
 OPTCREE
         
 
         ORG $1000
 INSTRUCTION_DECIPHER:           *SUBROUTINE STARTS HERE 
                 
-        LEA     TEST, A2 ;THIS IS TEST VALUE (DELETE IS WHEN RUNNING THE ACTUAL CODE)        
+        LEA     TEST, A2 ;DELETE THIS WHEN RUNNING THE ACTUAL CODE)        
            
         CLR.L      D2 ; CLEAR OUT D0
         MOVE.W    (A2),D2  ;
@@ -155,7 +155,7 @@ LONG_SIZE       MOVE.B  #4, D7
                
 ******************** MOVEA_INST ***************************************************************************
 MOVEA_INST      LEA MOVEA_TAG, A6
-               * JSR     MOVE_MOVEA_EA ***** CALL <EA>
+                JSR     MOVE_MOVEA_EA ***** CALL <EA>
                 MOVE.W (A2),D2 ;
                 LSR.L   #8, D2 ;GET THE 13, 12 BITS FOR SIZE
                 LSR.L   #4, D2 ;TOTAL OF 11 SHIFTS 
@@ -760,6 +760,7 @@ none
 *********INSTRUCTION_DECIFER SUBROUTINE SOURCE FILE ENDS HERE **************************************************
 
 *---------------------------------------------------------------------------------------------------------------
+
 
 
 
