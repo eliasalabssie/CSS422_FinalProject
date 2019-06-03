@@ -15,7 +15,7 @@
 *the size of the instruction will be returned on register D6
 *the address of ilegal instruction will be returned via register A6
 *-------------------------------------------------------------------------
-test    dc.W    $0480
+test    dc.W    $3000
 OPTCREE
         
 
@@ -100,9 +100,9 @@ MOVE_MOVEA      CLR.L   D2
                *ELSE IT'S EITHER MOVE OR MOVEA, SO KEEP PROCESSING
                 CLR.L   D2
                 MOVE.W  (A2),D2
-                LSR.W   #6, D2 ;MOVE THE 9,8,7TH BITS TO THE FRONT 
-                AND.B   #$07, D2 ;MASK THE OTHER BITS EXCEPT 9,8,7
-                CMP.B   #%001, D2 ;IF EQUAL, ITS MOVEA
+                LSR.W   #6, D2 ;MOVE THE 8,7,6TH BITS TO THE FRONT 
+                AND.B   #$07, D2 ;MASK THE OTHER BITS EXCEPT 8,7,6
+                CMP.B   #$01, D2 ;IF EQUAL, ITS MOVEA
                 BEQ     MOVEA_INST
 
                 *ELSE IT IS MOVE
@@ -155,7 +155,7 @@ LONG_SIZE       MOVE.B  #4, D7
                
 ******************** MOVEA_INST ***************************************************************************
 MOVEA_INST      LEA MOVEA_TAG, A6
-                JSR     MOVE_MOVEA_EA ***** CALL <EA>
+               * JSR     MOVE_MOVEA_EA ***** CALL <EA>
                 MOVE.W (A2),D2 ;
                 LSR.L   #8, D2 ;GET THE 13, 12 BITS FOR SIZE
                 LSR.L   #4, D2 ;TOTAL OF 11 SHIFTS 
@@ -760,6 +760,7 @@ none
 *********INSTRUCTION_DECIFER SUBROUTINE SOURCE FILE ENDS HERE **************************************************
 
 *---------------------------------------------------------------------------------------------------------------
+
 
 
 
