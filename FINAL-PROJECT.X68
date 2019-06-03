@@ -15,12 +15,14 @@
 *the size of the instruction will be returned on register D6
 *the address of ilegal instruction will be returned via register A6
 *-------------------------------------------------------------------------
-test    dc.W    $2038
+test    dc.W    $103C
 OPTCREE
         
 
         ORG $1000
 INSTRUCTION_DECIPHER:           *SUBROUTINE STARTS HERE 
+        
+        CLR.L   D7
                 
         LEA     TEST, A2 ;DELETE THIS WHEN RUNNING THE ACTUAL CODE)        
            
@@ -82,7 +84,7 @@ INSTRUCTION_DECIPHER:           *SUBROUTINE STARTS HERE
  ***************************************************************************************************************
 WRONG_INSTRUCTION            MOVE.B   #5, D7 ; A WRONG INSTRUCTION 'KEY'
                              MOVEA.L  A2, A6 ;MOVING THE MEMORY ADDRESS INTO A6 WHEN INSTRUCTION IS WRONG 
-                             MOVE.W  (A2)+,D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
+                             MOVE.W  (A2),D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
                              RTS
 *****************************************************************************************************************
         
@@ -132,7 +134,7 @@ MOVE_INST       LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION TAG INTO  A6
                 *ELSE IT'S WRONG SIZE
 WRONG_SIZE      MOVE.B  #5, D7 ;A PUT WRONG SIZE SIGN INTO D7
                 MOVEA.L  A2, A6 ;MOVING THE MEMORY ADDRESS INTO A6 WHEN SIZE/INSTRUCTION IS WRONG 
-                MOVE.W  (A2)+,D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
+                MOVE.W  (A2),D6 ;MOVE MEMORY ADDRESS INTO D6, AND INCREMENT A2 BY WORD
                 RTS          ;BACK TO MAIN
                 
 
@@ -142,13 +144,13 @@ WRONG_SIZE      MOVE.B  #5, D7 ;A PUT WRONG SIZE SIGN INTO D7
 *PUTS 1 FOR BYTE, 2 FOR WORD, AND 4 FOR LONG INTO D7 AS A SIGN OF SIZES, AND RTS BACK TO MAIN
                
 **********************************************************************************************************
-BYTE_SIZE       MOVE.B #1, D7
+BYTE_SIZE       ADD.B #1, D7
                 RTS 
    
-WORD_SIZE       MOVE.B  #2, D7
+WORD_SIZE       ADD.B  #2, D7
                 RTS
                 
-LONG_SIZE       MOVE.B  #4, D7
+LONG_SIZE       ADD.B  #4, D7
                 RTS
 *----------------------------------------------------------------------------------------------------------
                 
@@ -216,7 +218,7 @@ ADDQ_INSTRUCTION        CLR.L   D2
 *0    1    1    1  * BITS * THESE BITS MAKES MOVEQ UNIQUE FROM ALL INSTRUCTIONS               
 MOVEQ_INSTRUCTION       LEA   MOVEQ_TAG, A6
                         MOVE.B  #0, D7 * SIGN TO SAY IT DOESN'T NEED SIZE BITS 
-                        *JSR     MOVEQ_EA ***** CALL <EA> 
+                        JSR     MOVEQ_EA ***** CALL <EA> 
                         RTS
 *******************************************************************************************************                       
 
@@ -693,12 +695,12 @@ MOVEM_REGISTER_TO_MEMORY   JMP  MOVEM_MEMORY_TO_REGISTER
  
 MOVEM_WORD_SIZE            LEA MOVEM_TAG,A6
                            MOVE.B  #7, D7
-                           JSR  MOVEM_EA  EA3 ***** <EA>  
+                           *JSR  MOVEM_EA  EA3 ***** <EA>  
                            RTS 
                     
 MOVEM_LONG_SIZE            LEA MOVEM_TAG,A6 
                            MOVE.B  #9, D7
-                           JSR  MOVEM_EA  EA3 ***** <EA>  
+                           *JSR  MOVEM_EA  EA3 ***** <EA>  
                            RTS
 
 
@@ -760,6 +762,8 @@ none
 *********INSTRUCTION_DECIFER SUBROUTINE SOURCE FILE ENDS HERE **************************************************
 
 *---------------------------------------------------------------------------------------------------------------
+
+
 
 
 
