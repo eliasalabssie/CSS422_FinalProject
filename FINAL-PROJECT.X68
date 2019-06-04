@@ -416,7 +416,7 @@ REGISRER_ARTHIMETIC     CLR.L      D2
                         *ELSE IT IS EGISTER ASR
 
                         LEA ASR_TAG,A6 *MOVE ASL_TAG INTO A6
-                        *JSR  EA2 ***** CALL <EA>
+                        JSR  EA2 ***** CALL <EA>
                         
                         *THEN SIZE OF TH OPERANDS 
 
@@ -507,7 +507,7 @@ LEGAL_INST_NO_SIZE  MOVE.B  #0, D7 *MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED
 
 
 MEMORY_ARTIMETIC_LEFT   LEA     ASL_TAG, A6 
-                        JSR     EA4 ***** CALL <EA>
+                        JSR     EA3 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
   
 MEMORY_LOGICAL     CLR.L     D2
@@ -517,13 +517,13 @@ MEMORY_LOGICAL     CLR.L     D2
                   
                   ;ELSE MEMEORY_LOGICAL_RIGHT
                    LEA     ASR_TAG, A6
-                   JSR     EA4 ***** CALL <EA>
+                   JSR     EA3 ***** CALL <EA>
                    JMP    LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
 
 
 
 MEMORY_LOGICAL_LEFT     LEA     LSL_TAG, A6
-                        JSR     EA4 ***** CALL <EA>
+                        JSR     EA3 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
@@ -534,12 +534,12 @@ MEMORY_ROTATE      CLR.L     D2
                     
                    *ELSE IT SI MEMORY ROTATE RIGHT (ROR)
                    LEA     ROR_TAG, A6
-                   JSR     EA4 ***** CALL <EA>
+                   JSR     EA3 ***** CALL <EA>
                    JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
 MEMORY_ROTATE_LEFT      LEA     ROL_TAG, A6
-                        JSR     EA4 ***** CALL <EA>
+                        JSR     EA3 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
@@ -764,6 +764,7 @@ none
 *********INSTRUCTION_DECIFER SUBROUTINE SOURCE FILE ENDS HERE **************************************************
 
 *---------------------------------------------------------------------------------------------------------------
+
 
 
 
