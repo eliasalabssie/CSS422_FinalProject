@@ -111,9 +111,9 @@ MOVE_MOVEA      CLR.L   D2
                 
 *------------------ MOVE -----------------------------------------------------------------------  
             
-*01 — Byte operation
-*11 — Word operation
-*10 — Long operation                
+*01 â€” Byte operation
+*11 â€” Word operation
+*10 â€” Long operation                
 MOVE_INST       LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION TAG INTO  A6
                 JSR     MOVE_MOVEA_EA
                 MOVE.W (A2),D2 ;
@@ -185,9 +185,9 @@ ADDQ_MAYBE_INSTRUCTION  CLR.L        D2
                         JMP           WRONG_INSTRUCTION
  
 *********************************************************************************************************
-*00— Byte operation
-*01— Word operation
-*10— Long operation 
+*00â€” Byte operation
+*01â€” Word operation
+*10â€” Long operation 
 *7,6TH BITS ARE THE SIZE BITS FOR ADDQ                        
 ADDQ_INSTRUCTION        CLR.L   D2
                         MOVE.W  (A2),D2
@@ -276,8 +276,8 @@ BIT_MANUP
 
 ******************************************************************************************************************                       
 *Byte Word Long Operation
-*000 001 010 Dn – < ea > ? Dn
-*100 101 110 < ea > – Dn ? < ea > 
+*000 001 010 Dn â€“ < ea > ? Dn
+*100 101 110 < ea > â€“ Dn ? < ea > 
 SUB_INSTRUCTION         MOVE.W  (A2),D2
                         LSR.L   #6,D2
                         AND.B   #$03,D2
@@ -359,8 +359,8 @@ ADD_INST        LEA     ADD_TAG, A6 ;PUT ADD_TAG INTO A6 FOR PRINT
 
 
 *----------------------------------------------------------------------------------------------------------               
-*011— Word operation; 
-*111— Long operation. 
+*011â€” Word operation; 
+*111â€” Long operation. 
 ADDA_INST       LEA     ADDA_TAG, A6
                 JSR     EA4   ***** CALL <EA>
                 MOVE.W  (A2),D2
@@ -500,7 +500,7 @@ MEMORY_ARTIMETIC   CLR.L      D2
                    
                    ;ELSE MEMEORY_ARTIMETIC_RIGHT (ASR)
                     LEA     ASR_TAG, A6
-                    JSR     EA4  ***** CALL <EA>
+                    JSR     EA3  ***** CALL <EA>
                     
 LEGAL_INST_NO_SIZE  MOVE.B  #0, D7 *MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED 
                     RTS
@@ -687,8 +687,8 @@ MOVEM_EXT_INST       MOVE.W     (A2),D2
                       *ELSE IF 1->Memory to register. 
                       
 *6TH BIT HOLDS size of the registers being transferred.
-*0 — Word transfer
-*1 — Long transfer                      
+*0 â€” Word transfer
+*1 â€” Long transfer                      
 MOVEM_MEMORY_TO_REGISTER   BTST  #6,D2  
                            BEQ   MOVEM_WORD_SIZE *WORD SIZE
                            JMP   MOVEM_LONG_SIZE *ELSE LONG SIZE   
