@@ -853,7 +853,7 @@ MOVEQ_EA    MOVE.W  (A2),D6                 * Prepare source data bits          
             MOVE.W  (A2),D5                 * Prepare destination regiter bits
             ANDI.W  #BITS9TO11_MASK,D5      * Isolate destination register bits
             MOVE.B  #9,D3                   * Prepare shift count
-            LSR.W   D3,D1                   * Move destination register bits right
+            LSR.W   D3,D5                   * Move destination register bits right      !---
             MOVE.B  #10,D7
             RTS                                 !---
 
