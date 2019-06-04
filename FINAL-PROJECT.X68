@@ -15,7 +15,7 @@
 *the size of the instruction will be returned on register D6
 *the address of ilegal instruction will be returned via register A6
 *-------------------------------------------------------------------------
-test    dc.W    $103C
+test    dc.W    $3078
 OPTCREE
         
 
@@ -115,6 +115,7 @@ MOVE_MOVEA      CLR.L   D2
 *11 — Word operation
 *10 — Long operation                
 MOVE_INST       LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION TAG INTO  A6
+                JSR     MOVE_MOVEA_EA
                 MOVE.W (A2),D2 ;
                 LSR     #8,D2  *MAKE A TOTAL OF 12 SHIFT TO PUSH 12,AND 13 BIT TO FRONT
                 LSR     #4, D2 (8 + 4) SHIFTS JUST NOT TO USE REGISTERS FOR SHIFTING
@@ -157,7 +158,7 @@ LONG_SIZE       ADD.B  #4, D7
                
 ******************** MOVEA_INST ***************************************************************************
 MOVEA_INST      LEA MOVEA_TAG, A6
-                JSR     MOVE_MOVEA_EA ***** CALL <EA>
+                *JSR     MOVE_MOVEA_EA ***** CALL <EA>
                 MOVE.W (A2),D2 ;
                 LSR.L   #8, D2 ;GET THE 13, 12 BITS FOR SIZE
                 LSR.L   #4, D2 ;TOTAL OF 11 SHIFTS 
@@ -197,7 +198,7 @@ ADDQ_INSTRUCTION        CLR.L   D2
                         
                         *ELSE IT IS ADDQ                        
                         LEA ADDQ_TAG, A6 * PUT THE SIGN OF THE ADDQ TAG INTO A6
-                        *JSR     ADDQ_EA ***** CALL <EA>
+                        JSR     ADDQ_EA ***** CALL <EA>
 
                         MOVE.W      (A2),D2
                         LSR.L        #6, D2
@@ -437,7 +438,7 @@ REG_SHIFT_SIZE          CMP.B      #$0,D2
                 
 ************************************************************************************************************                                          
 REGISTER_ARTIMETIC_LEFT LEA  ASL_TAG, A6
-                        *JSR     EA2 ***** CALL <EA>
+                        JSR     EA2 ***** CALL <EA>
                         JMP   REGISTER_BIT_MANUP *DETERMINE SIZE OF THE OPERANDS 
 *--------------------------------------------------------------------------------------------------------            
          
@@ -448,12 +449,12 @@ REGISTER_LOGICAL        CLR.L      D2
                         
                         *ELSE IT IS REGISTER_LOGICAL _RIGH(LSR)
                         LEA  LSR_TAG, A6
-                        *JSR     EA2 ***** CALL <EA> 
+                        JSR     EA2 ***** CALL <EA> 
                         JMP     REGISTER_BIT_MANUP 
                         
 ******************************************************************************************************                        
 REGISTER_LOGICAL_LEFT   LEA     LSL_TAG, A6
-                        *JSR     EA2 ***** CALL <EA>
+                        JSR     EA2 ***** CALL <EA>
                         JMP     REGISTER_BIT_MANUP 
 
 *----------------------------------------------------------------------------------------------------                        
@@ -464,11 +465,11 @@ REGISTER_ROTATE         CLR.L      D2
                         
                         ;ELSE REGISTER_ROTATE RIGHT
                         LEA     ROR_TAG, A6
-                        *JSR     EA2 ***** CALL <EA>
+                        JSR     EA2 ***** CALL <EA>
                         JMP     REGISTER_BIT_MANUP     
 
 REGISTER_ROTATE_LEFT    LEA     ROL_TAG, A6
-                        *JSR     EA2 ***** CALL <EA>
+                        JSR     EA2 ***** CALL <EA>
                         JMP     REGISTER_BIT_MANUP
 
              
@@ -499,14 +500,14 @@ MEMORY_ARTIMETIC   CLR.L      D2
                    
                    ;ELSE MEMEORY_ARTIMETIC_RIGHT (ASR)
                     LEA     ASR_TAG, A6
-                    *JSR     EA4  ***** CALL <EA>
+                    JSR     EA4  ***** CALL <EA>
                     
 LEGAL_INST_NO_SIZE  MOVE.B  #0, D7 *MOVE 0 INTO D7, TO INDICATE NO SIZE NEEDED 
                     RTS
 
 
 MEMORY_ARTIMETIC_LEFT   LEA     ASL_TAG, A6 
-                        *JSR     EA4 ***** CALL <EA>
+                        JSR     EA4 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
   
 MEMORY_LOGICAL     CLR.L     D2
@@ -516,13 +517,13 @@ MEMORY_LOGICAL     CLR.L     D2
                   
                   ;ELSE MEMEORY_LOGICAL_RIGHT
                    LEA     ASR_TAG, A6
-                   *JSR     EA4 ***** CALL <EA>
+                   JSR     EA4 ***** CALL <EA>
                    JMP    LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 AND RTS
 
 
 
 MEMORY_LOGICAL_LEFT     LEA     LSL_TAG, A6
-                        *JSR     EA4 ***** CALL <EA>
+                        JSR     EA4 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
@@ -533,12 +534,12 @@ MEMORY_ROTATE      CLR.L     D2
                     
                    *ELSE IT SI MEMORY ROTATE RIGHT (ROR)
                    LEA     ROR_TAG, A6
-                   *JSR     EA4 ***** CALL <EA>
+                   JSR     EA4 ***** CALL <EA>
                    JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
 MEMORY_ROTATE_LEFT      LEA     ROL_TAG, A6
-                        *JSR     EA4 ***** CALL <EA>
+                        JSR     EA4 ***** CALL <EA>
                         JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
@@ -562,9 +563,9 @@ BRA_BGT_BLE_BEQ         CLR.L   D2
                         JMP WRONG_INSTRUCTION                        
                        
 BRA_INST        LEA     BRA_TAG, A6 *MOVE THE TAG NAME
-                JMP     BRANCH_RTS 
+                JSR     BRANCH_RTS 
                       
-                        *JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+                JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
                         
 BGT_INST        LEA  BGT_TAG,A6 *MOVE THE TAG NAMEE
 
@@ -572,6 +573,7 @@ BGT_INST        LEA  BGT_TAG,A6 *MOVE THE TAG NAMEE
               
                         
 BRANCH_RTS      MOVE.B  #8,D7
+                ADD.w   (A2),D6
                 RTS  
                 
 BLE_INST        LEA  BLE_TAG,A6 *MOVE THE TAG NAMEE
@@ -629,7 +631,7 @@ JSR_MAYBE_INST  MOVE.W  (A2),D2
 
 NOP_INST      LEA NOP_TAG, A6
               CLR.B     D6 *CLEARING D6 TO SIGNIFY IT IS A COMPLETE OPCODE FOR MAIN SUBROUTINE              
-              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
+              *JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED AND RTS
 
 
 RTS_INST      LEA RTS_TAG, A6 
@@ -638,7 +640,7 @@ RTS_INST      LEA RTS_TAG, A6
               
 
 NOT_INST      LEA NOT_TAG,  A6
-              *JSR       EA3 ***** <EA>  
+              JSR       EA3 ***** <EA>  
               MOVE.W        (A2),D2
               LSR.L         #6,D2
               AND.B         #$03,D2
@@ -651,13 +653,13 @@ NOT_INST      LEA NOT_TAG,  A6
               JMP           WRONG_SIZE *ELSE WRONG SIZE
 
 JSR_INST      LEA     JSR_TAG, A6
-              *JSR       EA3  EA3 ***** <EA>  
-              JMP     LEGAL_INST_NO_SIZE      
+              JSR       EA3  EA3 ***** <EA>  
+              *JMP     LEGAL_INST_NO_SIZE      
                     
 
 LEA_INST      LEA NOT_TAG, A6
               JSR       EA4  EA3 ***** <EA>  
-              JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED.
+              *JMP     LEGAL_INST_NO_SIZE ;PUT 0 INTO D7 TO INDICATE NO SIZE NEEDED.
        
  
 *----------------------MOVEM SUBROUTINE----------------------------------------------------------                    
@@ -695,12 +697,12 @@ MOVEM_REGISTER_TO_MEMORY   JMP  MOVEM_MEMORY_TO_REGISTER
  
 MOVEM_WORD_SIZE            LEA MOVEM_TAG,A6
                            MOVE.B  #7, D7
-                           *JSR  MOVEM_EA  EA3 ***** <EA>  
+                           JSR  MOVEM_EA  EA3 ***** <EA>  
                            RTS 
                     
 MOVEM_LONG_SIZE            LEA MOVEM_TAG,A6 
                            MOVE.B  #9, D7
-                           *JSR  MOVEM_EA  EA3 ***** <EA>  
+                           JSR  MOVEM_EA  EA3 ***** <EA>  
                            RTS
 
 
@@ -762,6 +764,9 @@ none
 *********INSTRUCTION_DECIFER SUBROUTINE SOURCE FILE ENDS HERE **************************************************
 
 *---------------------------------------------------------------------------------------------------------------
+
+
+
 
 
 
