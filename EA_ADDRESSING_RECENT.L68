@@ -1,0 +1,201 @@
+00000000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 6/4/2019 2:36:58 PM
+
+00000000  =0000003F                  1  BITS0TO5_MASK   EQU %00111111
+00000000  =000000C0                  2  BITS7TO8_MASK   EQU %11000000
+00000000  =00000E00                  3  BITS9TO11_MASK  EQU %00000111000000000
+00000000                             4  
+00000000  1E3C 000A                  5  FORMAT_IMMEDIATE_DATA   MOVE.B  #10,D7
+00000004  BC7C 0000                  6                          CMP     #0,D6
+00000008  6700 0006                  7                          BEQ     IMMEDIATE0
+0000000C  6000 0004                  8                          BRA     IMMEDIATE_END
+00000010  7C08                       9  IMMEDIATE0              MOVEQ   #8,D6
+00000012                            10  
+00000012  4E75                      11  IMMEDIATE_END           RTS
+00000014                            12   
+00000014  3212                      13  EA1     MOVE.W  (A2),D1                 * Prepare to capture register field
+00000016  3412                      14          MOVE.W  (A2),D2                 * Prepare to capture EA field
+00000018  0201 003F                 15          ANDI.B  #BITS0TO5_MASK,D1       * Isolate the source EA bits
+0000001C                            16          
+0000001C  0242 0E00                 17          ANDI.W  #BITS9TO11_MASK,D2      * Isolate the source EA bits
+00000020  163C 0009                 18          MOVE.B  #9,D3                   * Prepare shift count
+00000024  E66A                      19          LSR.W   D3,D2                   * Move register bits right
+00000026  0202 00C7                 20          ANDI.B  #%11000111,D2           * Set EA mode
+0000002A  0812 0008                 21          BTST    #8,(A2)                 * Check opmode
+0000002E  6700 000A                 22          BEQ     EA1_MODE_ZERO           * Check opmode
+00000032                            23          
+00000032  3A01                      24  EA1_MODE_ONE    MOVE.W  D1,D5           * Set EA as destination
+00000034  3C02                      25                  MOVE.W  D2,D6           * Set register as source
+00000036  6000 0006                 26                  BRA EA1_END             * Complete subroutine
+0000003A                            27          
+0000003A  3C01                      28  EA1_MODE_ZERO   MOVE.W  D1,D6           * Set EA as source
+0000003C  3A02                      29                  MOVE.W  D2,D5           * Set register as destination
+0000003E                            30  
+0000003E  0006 00C0                 31  EA1_END         ORI.B   #BITS7TO8_MASK,D6       * Populate the S and D bits
+00000042  4E75                      32                  RTS
+00000044                            33          
+00000044  3C12                      34  EA2             MOVE.W  (A2),D6         * Prepare to capture source EA
+00000046  0246 0E00                 35                  ANDI.W  #BITS9TO11_MASK,D6      * Isolate the source EA bits
+0000004A  163C 0009                 36                  MOVE.B  #9,D3                   * Prepare shift count
+0000004E  E66E                      37                  LSR.W   D3,D6                   * Move register bits right
+00000050  0812 0005                 38                  BTST    #5,(A2)           * Check whether shift count is immediate
+00000054  6700 000A                 39                  BEQ     EA2_IMMEDIATE
+00000058                            40   
+00000058  0006 00C0                 41  EA2_REGISTER    ORI.B   #%11000000,D6   * Set S and D bits
+0000005C  6000 000A                 42                  BRA     EA2_END         * Complete subroutine
+00000060                            43                  
+00000060  1E3C 000A                 44  EA2_IMMEDIATE   MOVE.B  #10,D7          * Prepare to pass immediate data to print subroutine
+00000064  4EB8 0000                 45                  JSR     FORMAT_IMMEDIATE_DATA
+00000068                            46                  
+00000068  3A12                      47  EA2_END         MOVE.W  (A2),D5         * Prepare to capture destination EA
+0000006A  CA3C 0007                 48                  AND.B   #%00000111,D5
+0000006E  4E75                      49                  RTS
+00000070                            50     
+00000070  3C12                      51  EA3     MOVE.W  (A2),D6
+00000072  0206 003F                 52          ANDI.B  #BITS0TO5_MASK,D6       * Isolate the source EA bits
+00000076  0006 0080                 53          ORI.B   #%10000000,D6
+0000007A  4E75                      54          RTS
+0000007C                            55  
+0000007C  3212                      56  EA4     MOVE.W  (A2),D1         
+0000007E  0201 003F                 57          ANDI.B  #BITS0TO5_MASK,D1       * Isolate the source EA bits
+00000082  0001 00C0                 58          ORI.B   #BITS7TO8_MASK,D1       * Populate the S and D bits
+00000086  1C01                      59          MOVE.B  D1,D6                   * Pass source EA to print subroutine
+00000088  3212                      60          MOVE.W  (A2),D1         
+0000008A                            61          
+0000008A  0241 0E00                 62          ANDI.W  #BITS9TO11_MASK,D1   * Isolate the destination register number
+0000008E  143C 0009                 63          MOVE.B  #9,D2                   * Prepare shift count
+00000092  E469                      64          LSR.W   D2,D1                   * Move register bits right
+00000094  0201 00CF                 65          ANDI.B  #%11001111,D1           * Set destination mode
+00000098  0001 0008                 66          ORI.B   #%00001000,D1           * Set destination mode
+0000009C  1A01                      67          MOVE.B  D1,D5                   * Pass destination EA to print subroutine
+0000009E  4E75                      68          RTS
+000000A0                            69          
+000000A0  3212                      70  MOVE_MOVEA_EA   MOVE.W  (A2),D1
+000000A2  0201 003F                 71                  ANDI.B  #BITS0TO5_MASK,D1           * Isolate the source EA bits
+000000A6  0001 00C0                 72                  ORI.B   #BITS7TO8_MASK,D1           * Populate the S and D bits
+000000AA  1C01                      73                  MOVE.B  D1,D6                   * Pass source EA to print subroutine
+000000AC  3212                      74                  MOVE.W  (A2),D1         
+000000AE  3412                      75                  MOVE.W  (A2),D2 
+000000B0  0241 0E00                 76                  ANDI.W  #BITS9TO11_MASK,D1   * Isolate the destination register number
+000000B4  163C 0009                 77                  MOVE.B  #9,D3                   * Prepare shift count
+000000B8  E669                      78                  LSR.W   D3,D1                   * Move destination register bits right
+000000BA  0242 01C0                 79                  ANDI.W  #%0000000111000000,D2   * Isolate the destination mode
+000000BE  E64A                      80                  LSR.W   #3,D2                  * Move destination mode bits right
+000000C0  8242                      81                  OR.W    D2,D1
+000000C2  1A01                      82                  MOVE.B  D1,D5                   * Pass destination EA to print subroutine
+000000C4  4E75                      83                  RTS
+000000C6                            84     
+000000C6  3C12                      85  ADDQ_EA MOVE.W  (A2),D6                 * Prepare source data bits
+000000C8  0246 0E00                 86          ANDI.W  #BITS9TO11_MASK,D6      * Isolate source data bits
+000000CC  163C 0009                 87          MOVE.B  #9,D3                   * Prepare shift count
+000000D0  E669                      88          LSR.W   D3,D1                   * Move source data bits right
+000000D2  3A12                      89          MOVE.W  (A2),D5                 * Prepare destination bits
+000000D4  0205 003F                 90          ANDI.B  #BITS0TO5_MASK,D5       * Isolate destination bits
+000000D8  4EB8 0000                 91          JSR     FORMAT_IMMEDIATE_DATA
+000000DC                            92          
+000000DC  1C12                      93  MOVEQ_EA    MOVE.B  (A2),D6                 * Prepare source data bits
+000000DE  3A12                      94              MOVE.W  (A2),D5                 * Prepare destination regiter bits
+000000E0  0245 0E00                 95              ANDI.W  #BITS9TO11_MASK,D5      * Isolate destination register bits
+000000E4  163C 0009                 96              MOVE.B  #9,D3                   * Prepare shift count
+000000E8  E669                      97              LSR.W   D3,D1                   * Move destination register bits right
+000000EA  1E3C 000A                 98              MOVE.B  #10,D7
+000000EE                            99  
+000000EE                           100  
+000000EE  3412                     101  MOVEM_EA   MOVE.W (A2),D2
+000000F0  0802 000A                102             BTST    #10, D2
+000000F4  6700 0042                103             BEQ     Register_to_memory *IF THE DIRCTION BIT IS 0, 
+000000F8                           104            
+000000F8                           105             
+000000F8  1A38 0005                106  WRONG_MOVEM     MOVE.B  5,D5 *KEY FOR WRONG INSTRUCTION
+000000FC  3C12                     107                  MOVE.W  (A2),D6 *PUT THE OPCODE ON D6
+000000FE  2C4A                     108                  MOVE.L   A2,A6  *PUT THE ADDRESS OF A2 ON A6
+00000100  4E75                     109                  RTS
+00000102                           110                  
+00000102                           111            *ELSE IT IS  memory-to-register transfers
+00000102  E68A                     112  Memory_to_Register LSR.L #3, D2
+00000104  C43C 0007                113                     AND.B #$07, D2
+00000108  B43C 0002                114                     CMP.B #$2,D2
+0000010C  6700 0016                115                     BEQ   MODE_010
+00000110                           116                     
+00000110  B43C 0003                117                     CMP.B #$03, D2
+00000114  6700 001A                118                     BEQ   MODE_011
+00000118  B43C 0007                119                     CMP.B #$07,D2
+0000011C  6700 0016                120                     BEQ   MODE_111
+00000120  4EF8 00F8                121                     JMP   WRONG_MOVEM        
+00000124                           122             
+00000124  3412                     123  MODE_010  MOVE.W (A2),D2
+00000126  C43C 0037                124            AND.B   #$37,D2
+0000012A  08C2 0007                125            BSET    #7,D2 *SET THE DESTINATION INDICATOR
+0000012E  4E75                     126            RTS 
+00000130                           127             
+00000130                           128         
+00000130  4EF8 0124                129  MODE_011   JMP  MODE_010 
+00000134  4EF8 0124                130  MODE_111   JMP MODE_010 
+00000138                           131  
+00000138                           132  
+00000138  3412                     133  Register_to_memory MOVE.W (A2),D2
+0000013A  E68A                     134                     LSR.L #3, D2
+0000013C  C43C 0007                135                     AND.B #$07, D2
+00000140  B43C 0002                136                     CMP.B #$2,D2
+00000144  6700 0016                137                     BEQ   MODE_01_0
+00000148  B43C 0004                138                     CMP.B #$04, D2
+0000014C  6700 0012                139                     BEQ   MODE_100
+00000150  B43C 0007                140                     CMP.B #$07,D2
+00000154  6700 000E                141                     BEQ   MODE_11_1
+00000158  4EF8 00F8                142                     JMP   WRONG_MOVEM
+0000015C                           143                     
+0000015C                           144  
+0000015C  4EF8 0124                145  MODE_01_0        JMP  MODE_010 
+00000160                           146  
+00000160  4EF8 0124                147  MODE_100        JMP  MODE_010 
+00000164                           148  
+00000164  4EF8 0124                149  MODE_11_1        JMP  MODE_010 
+00000168                           150  
+00000168                           151  
+00000168                           152  
+00000168                           153  
+00000168                           154              
+00000168                           155              
+00000168                           156              
+00000168                           157              
+00000168                           158              
+00000168                           159              
+Line 160 WARNING: END directive missing, starting address not set
+
+No errors detected
+1 warning generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+ADDQ_EA             C6
+BITS0TO5_MASK       3F
+BITS7TO8_MASK       C0
+BITS9TO11_MASK      E00
+EA1                 14
+EA1_END             3E
+EA1_MODE_ONE        32
+EA1_MODE_ZERO       3A
+EA2                 44
+EA2_END             68
+EA2_IMMEDIATE       60
+EA2_REGISTER        58
+EA3                 70
+EA4                 7C
+FORMAT_IMMEDIATE_DATA  0
+IMMEDIATE0          10
+IMMEDIATE_END       12
+MEMORY_TO_REGISTER  102
+MODE_010            124
+MODE_011            130
+MODE_01_0           15C
+MODE_100            160
+MODE_111            134
+MODE_11_1           164
+MOVEM_EA            EE
+MOVEQ_EA            DC
+MOVE_MOVEA_EA       A0
+REGISTER_TO_MEMORY  138
+WRONG_MOVEM         F8
