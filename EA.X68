@@ -1,10 +1,14 @@
 BITS0TO5_MASK   EQU %00111111
 BITS7TO8_MASK   EQU %11000000
 BITS9TO11_MASK  EQU %00000111000000000
- 
-BITS0TO5_MASK   EQU %00111111
-BITS7TO8_MASK   EQU %11000000
-BITS9TO11_MASK  EQU %00000111000000000
+
+FORMAT_IMMEDIATE_DATA   MOVE.B  #10,D7
+                        CMP     #0,D6
+                        BEQ     IMMEDIATE0
+                        BRA     IMMEDIATE_END
+IMMEDIATE0              MOVEQ   #8,D6
+
+IMMEDIATE_END           RTS
  
 EA1     MOVE.W  (A2),D1                 * Prepare to capture register field
         MOVE.W  (A2),D2                 * Prepare to capture EA field
@@ -37,7 +41,8 @@ EA2             MOVE.W  (A2),D6         * Prepare to capture source EA
 EA2_REGISTER    ORI.B   #%11000000,D6   * Set S and D bits
                 BRA     EA2_END         * Complete subroutine
                 
-EA2_IMMEDIATE   MOVE.B  #10,D7          * Prepare to pass immediate data to print subourtine 
+EA2_IMMEDIATE   MOVE.B  #10,D7          * Prepare to pass immediate data to print subroutine
+                JSR     FORMAT_IMMEDIATE_DATA
                 
 EA2_END         MOVE.W  (A2),D5         * Prepare to capture destination EA
                 AND.B   #%00000111,D5
@@ -76,8 +81,21 @@ MOVE_MOVEA_EA   MOVE.W  (A2),D1
                 OR.W    D2,D1
                 MOVE.B  D1,D5                   * Pass destination EA to print subroutine
                 RTS
-
-
+   
+ADDQ_EA MOVE.W  (A2),D6                 * Prepare source data bits
+        ANDI.W  #BITS9TO11_MASK,D6      * Isolate source data bits
+        MOVE.B  #9,D3                   * Prepare shift count
+        LSR.W   D3,D1                   * Move source data bits right
+        MOVE.W  (A2),D5                 * Prepare destination bits
+        ANDI.B  #BITS0TO5_MASK,D5       * Isolate destination bits
+        JSR     FORMAT_IMMEDIATE_DATA
+        
+MOVEQ_EA    MOVE.B  (A2),D6                 * Prepare source data bits
+            MOVE.W  (A2),D5                 * Prepare destination regiter bits
+            ANDI.W  #BITS9TO11_MASK,D5      * Isolate destination register bits
+            MOVE.B  #9,D3                   * Prepare shift count
+            LSR.W   D3,D1                   * Move destination register bits right
+            MOVE.B  #10,D7
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
