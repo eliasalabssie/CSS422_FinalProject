@@ -37,6 +37,22 @@ EA2             MOVE.W  (A2),D6         * Prepare to capture source EA
                 LSR.W   D3,D6                   * Move register bits right
                 BTST    #5,(A2)           * Check whether shift count is immediate
                 BEQ     EA2_IMMEDIATE
+ *ELIAS
+ MOVEM_EA   MOVE.W (A2),D2
+           ANDI.B  #$3F,D2
+           MOVE.W  D2,D6
+
+TEST_DIRECTION  BTST    #10,D6
+                BEQ     Register_to_memory
+                ORI.W   #$FF,D6
+                RTS
+                  
+Register_to_memory ANDI.W  #$7F,D6
+                   RTS
+
+
+
+
 
 EA2_REGISTER    ORI.B   #%11000000,D6   * Set S and D bits
                 BRA     EA2_END         * Complete subroutine
