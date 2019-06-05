@@ -18,7 +18,8 @@ EA1     MOVE.W  (A2),D1                 * Prepare to capture register field
         MOVE.B  #9,D3                   * Prepare shift count
         LSR.W   D3,D2                   * Move register bits right
         ANDI.B  #%11000111,D2           * Set EA mode
-        BTST    #8,(A2)                 * Check opmode
+        MOVE.W  (A2),D3
+        BTST    #8,D3                   * Check opmode
         BEQ     EA1_MODE_ZERO           * Check opmode
         
 EA1_MODE_ONE    MOVE.W  D1,D5           * Set EA as destination
@@ -29,31 +30,20 @@ EA1_MODE_ZERO   MOVE.W  D1,D6           * Set EA as source
                 MOVE.W  D2,D5           * Set register as destination
 
 EA1_END         ORI.B   #BITS7TO8_MASK,D6       * Populate the S and D bits
+                MOVE.B  D6,D1               * Pass source into subroutine
+                JSR     CHECK_VALID_EA
+                MOVE.B  D5,D1               * Pass destination into subroutine
+                JSR     CHECK_VALID_EA
                 RTS
         
 EA2             MOVE.W  (A2),D6         * Prepare to capture source EA
                 ANDI.W  #BITS9TO11_MASK,D6      * Isolate the source EA bits
                 MOVE.B  #9,D3                   * Prepare shift count
                 LSR.W   D3,D6                   * Move register bits right
-                BTST    #5,(A2)           * Check whether shift count is immediate
+                MOVE.W  (A2),D3
+                BTST    #5,D3           * Check whether shift count is immediate
                 BEQ     EA2_IMMEDIATE
- *ELIAS
- MOVEM_EA   MOVE.W (A2),D2
-           ANDI.B  #$3F,D2
-           MOVE.W  D2,D6
-
-TEST_DIRECTION  BTST    #10,D6
-                BEQ     Register_to_memory
-                ORI.W   #$FF,D6
-                RTS
-                  
-Register_to_memory ANDI.W  #$7F,D6
-                   RTS
-
-
-
-
-
+ 
 EA2_REGISTER    ORI.B   #%11000000,D6   * Set S and D bits
                 BRA     EA2_END         * Complete subroutine
                 
@@ -62,11 +52,17 @@ EA2_IMMEDIATE   MOVE.B  #10,D7          * Prepare to pass immediate data to prin
                 
 EA2_END         MOVE.W  (A2),D5         * Prepare to capture destination EA
                 AND.B   #%00000111,D5
+                MOVE.B  D6,D1               * Pass source into subroutine
+                JSR     CHECK_VALID_EA
+                MOVE.B  D5,D1               * Pass destination into subroutine
+                JSR     CHECK_VALID_EA
                 RTS
    
 EA3     MOVE.W  (A2),D6
         ANDI.B  #BITS0TO5_MASK,D6       * Isolate the source EA bits
         ORI.B   #%10000000,D6
+        MOVE.B  D6,D1               * Pass source into subroutine
+        JSR     CHECK_VALID_EA
         RTS
 
 EA4     MOVE.W  (A2),D1         
@@ -81,6 +77,10 @@ EA4     MOVE.W  (A2),D1
         ANDI.B  #%11001111,D1           * Set destination mode
         ORI.B   #%00001000,D1           * Set destination mode
         MOVE.B  D1,D5                   * Pass destination EA to print subroutine
+        MOVE.B  D6,D1               * Pass source into subroutine
+        JSR     CHECK_VALID_EA
+        MOVE.B  D5,D1               * Pass destination into subroutine
+        JSR     CHECK_VALID_EA
         RTS
         
 MOVE_MOVEA_EA   MOVE.W  (A2),D1
@@ -96,22 +96,104 @@ MOVE_MOVEA_EA   MOVE.W  (A2),D1
                 LSR.W   #3,D2                  * Move destination mode bits right
                 OR.W    D2,D1
                 MOVE.B  D1,D5                   * Pass destination EA to print subroutine
+                MOVE.B  D6,D1               * Pass source into subroutine
+                JSR     CHECK_VALID_EA
+                MOVE.B  D5,D1               * Pass destination into subroutine
+                JSR     CHECK_VALID_EA
                 RTS
    
 ADDQ_EA MOVE.W  (A2),D6                 * Prepare source data bits
         ANDI.W  #BITS9TO11_MASK,D6      * Isolate source data bits
         MOVE.B  #9,D3                   * Prepare shift count
-        LSR.W   D3,D1                   * Move source data bits right
+        LSR.W   D3,D6                  * Move source data bits right            !---
         MOVE.W  (A2),D5                 * Prepare destination bits
         ANDI.B  #BITS0TO5_MASK,D5       * Isolate destination bits
         JSR     FORMAT_IMMEDIATE_DATA
+        MOVE.B  D6,D1               * Pass source into subroutine
+        JSR     CHECK_VALID_EA
+        MOVE.B  D5,D1               * Pass destination into subroutine
+        JSR     CHECK_VALID_EA
+        RTS                                    !---
         
-MOVEQ_EA    MOVE.B  (A2),D6                 * Prepare source data bits
+MOVEQ_EA    MOVE.W  (A2),D6                 * Prepare source data bits          !---
+            AND.W   #$00FF,D6                                                   !---
             MOVE.W  (A2),D5                 * Prepare destination regiter bits
             ANDI.W  #BITS9TO11_MASK,D5      * Isolate destination register bits
             MOVE.B  #9,D3                   * Prepare shift count
-            LSR.W   D3,D1                   * Move destination register bits right
+            LSR.W   D3,D5                   * Move destination register bits right
             MOVE.B  #10,D7
+            MOVE.B  D6,D1               * Pass source into subroutine
+            JSR     CHECK_VALID_EA
+            MOVE.B  D5,D1               * Pass destination into subroutine
+            JSR     CHECK_VALID_EA
+            RTS                                 !---
+
+
+
+
+MOVEM_EA   MOVE.W (A2),D2
+           BTST    #10, D2
+           BEQ     Register_to_memory *IF THE DIRCTION BIT IS 0, 
+          
+           
+                
+          *ELSE IT IS  memory-to-register transfers
+Memory_to_Register LSR.L #3, D2
+                   AND.B #$07, D2
+                   CMP.B #$2,D2
+                   BEQ   MODE_010
+                   CMP.B #$03, D2
+                   BEQ   MODE_010  
+                   CMP.B #$07,D2
+                   BEQ   MODE_010  
+                   JMP   WRONG_INSTRUCTION        
+           
+MODE_010  MOVE.W    (A2),D2
+          AND.B     #$3F,D2
+          BSET      #7,D2 *SET THE DESTINATION INDICATOR
+          MOVE.B    D2,D6
+          RTS
+
+Register_to_memory MOVE.W (A2),D2
+                   LSR.L #3, D2
+                   AND.B #$07, D2
+                   CMP.B #$2,D2
+                   BEQ   MODE_01_0
+                   CMP.B #$04, D2
+                   BEQ   MODE_01_0 
+                   CMP.B #$07,D2
+                   BEQ   MODE_01_0 
+                   JMP   WRONG_INSTRUCTION
+                   
+
+MODE_01_0       MOVE.W  (A2),D6
+                ANDI.B  #$3F,D6
+                RTS
+         
+CHECK_VALID_EA  MOVE.B  D1,D0
+                ANDI.B  #%111000,D0
+                LSR     #3,D0
+                CMP.B   #%00000101,D0
+                BEQ     INVALID_EA
+                CMP.B   #%00000110,D0
+                BEQ     INVALID_EA
+                CMP.B   #%00000111,D0
+                BEQ     VALID_EA_PC
+                RTS
+                
+                
+VALID_EA_PC     MOVE.B  D1,D0
+                ANDI.B  #%000111,D0
+                CMP.B   #%00010000,D0
+                BEQ     INVALID_EA
+                CMP.B   #%00011000,D0
+                BEQ     INVALID_EA
+                RTS
+                
+INVALID_EA      JSR     WRONG_INSTRUCTION
+                RTS
+                
+
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
