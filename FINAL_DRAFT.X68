@@ -240,9 +240,9 @@ MOVE_MOVEA      CLR.L   D2
                 
 *------------------ MOVE -----------------------------------------------------------------------  
             
-*01 — Byte operation
-*11 — Word operation
-*10 — Long operation                
+*01 Â— Byte operation
+*11 Â— Word operation
+*10 Â— Long operation                
 MOVE_INST       LEA     MOVE_TAG, A6 ;MOVING THE INSTRUCTION TAG INTO  A6
                 JSR     MOVE_MOVEA_EA
                 MOVE.W (A2),D2 ;
@@ -313,9 +313,9 @@ ADDQ_MAYBE_INSTRUCTION  CLR.L        D2
                         JMP           WRONG_INSTRUCTION
  
 *********************************************************************************************************
-*00— Byte operation
-*01— Word operation
-*10— Long operation 
+*00Â— Byte operation
+*01Â— Word operation
+*10Â— Long operation 
 *7,6TH BITS ARE THE SIZE BITS FOR ADDQ                        
 ADDQ_INSTRUCTION        CLR.L   D2
                         MOVE.W  (A2),D2
@@ -404,8 +404,8 @@ BIT_MANUP
 
 ******************************************************************************************************************                       
 *Byte Word Long Operation
-*000 001 010 Dn – < ea > ? Dn
-*100 101 110 < ea > – Dn ? < ea > 
+*000 001 010 Dn Â– < ea > ? Dn
+*100 101 110 < ea > Â– Dn ? < ea > 
 SUB_INSTRUCTION         MOVE.W  (A2),D2
                         LSR.L   #6,D2
                         AND.B   #$03,D2
@@ -487,8 +487,8 @@ ADD_INST        LEA     ADD_TAG, A6 ;PUT ADD_TAG INTO A6 FOR PRINT
 
 
 *----------------------------------------------------------------------------------------------------------               
-*011— Word operation; 
-*111— Long operation. 
+*011Â— Word operation; 
+*111Â— Long operation. 
 ADDA_INST       LEA     ADDA_TAG, A6
                 JSR     EA4   ***** CALL <EA>
                 MOVE.W  (A2),D2
@@ -814,8 +814,8 @@ MOVEM_EXT_INST       MOVE.W     (A2),D2
                       *ELSE IF 1->Memory to register. 
                       
 *6TH BIT HOLDS size of the registers being transferred.
-*0 — Word transfer
-*1 — Long transfer                    
+*0 Â— Word transfer
+*1 Â— Long transfer                    
 MOVEM_MEMORY_TO_REGISTER   BTST  #6,D2  
                            BEQ   MOVEM_WORD_SIZE *WORD SIZE
                            JMP   MOVEM_LONG_SIZE *ELSE LONG SIZE   
