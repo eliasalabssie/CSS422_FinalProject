@@ -28,7 +28,7 @@ ALL_REG     REG     D0-D7/A0-A6         ; all registers
             *               print instruction, and loop if there is more op-code
             
             
-    ORG    $100000
+    ORG    $1000
 START:
                     * Display WELCOME message
 WELCOME_LABEL       LEA     WELCOME,A1
