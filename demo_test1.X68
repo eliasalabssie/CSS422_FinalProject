@@ -13,6 +13,18 @@ start		EQU	$00009000	* ORG and END address
 * ORG the program so that it straddles the address boundary $00007FFF to $00008000
 
 		ORG	start
+	
+	MOVE.W    (A0),(A1)
+       MOVE.W    (A0),D0
+       MOVE.W    D1,(A0)+
+       MOVE.W    D1,$10(A1)
+       MOVE.L    $29(A0),$00120020
+       move.b    #$ff,($8,A0,D0) 
+       MOVE.L    D1,(-4,A6)
+       MOVE.W    $40(A5,D3.W),D4         
+       MOVE.B    #$B5,(A0)+
+
+
 
         NOP
         MOVEM.W  D1-D5,(A0)
